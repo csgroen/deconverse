@@ -9,7 +9,6 @@ Description: More about what it does (maybe more than one line)
 Depends: R (> 4.0), tidyverse
 Imports: 
     Seurat,
-    MuSiC,
     ggdensity,
     ggpubr,
     ggheatmapper,
@@ -28,7 +27,8 @@ Imports:
     cowplot,
     e1071,
     pbmcapply,
-    quadprog
+    quadprog,
+    nnls
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

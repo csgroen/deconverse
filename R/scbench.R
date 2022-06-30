@@ -368,7 +368,7 @@ deconvolute <- function(scbench,
     if(method == "cibersortx") {
         message("Running CIBERSORTx...")
         assert(!is.null(scref$cached_results[["cibersortx"]]))
-        deconv_res <- cibersortx_deconvolute(data, scref, cache_dir = method_cache, ...)
+        deconv_res <- cibersortx_deconvolute(data, scref, cache_path = method_cache, ...)
     } else if (method == "music") {
         message("Running MuSiC...")
         deconv_res <- music_deconvolute(data, scref, ...)
@@ -507,6 +507,7 @@ plt_population_proportions <- function(scbench, nshow = 50, order_by = NULL) {
 #' @import tidyverse
 #' @importFrom ggpubr stat_cor
 #' @importFrom ggdensity geom_hdr_points
+#' @importFrom ggheatmapper theme_scatter
 #'
 #' @return a ggplot object
 #'
@@ -578,6 +579,8 @@ plt_cor_heatmap <- function(scbench) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
 #'
+#' @importFrom ggheatmapper ggheatmap align_to_hm
+#' @importFrom yardstick rmse_vec
 #' @export
 plt_rmse_heatmap <- function(scbench) {
     #-- Get plot data
@@ -844,6 +847,7 @@ librarySizeNormalization <- function(data, factor = 10^6) {
     data/(colSums(data)/factor)
 }
 
+#' @export
 print.scbench <- function(x) {
     cat(str_glue("scbench object named {x$project_name} with {ncol(x$ref_data)} reference cells and {x$nlevels} levels of annotation"))
     cat("\n")
@@ -956,6 +960,7 @@ theme_sparse <- function (...)
 #' @import tidyverse
 #' @importFrom pbmcapply pbmclapply
 #' @importFrom R.utils filePath
+#' @importFrom Matrix rowSums
 .get_pseudobulk <- function(scbench, type, level, seed, ncores, ncells, by_batch) {
     cache_dir <- filePath(scbench$cache, scbench$project_name, "pseudobulks", type)
     dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
@@ -1059,6 +1064,7 @@ theme_sparse <- function (...)
 }
 
 #' @import tidyverse
+#' @importFrom data.table as.data.table
 .get_spillover_proportions <- function(scbench, deconv_res) {
     level <- .match_level(scbench, deconv_res, method = "spillover")
     bench_tb <- scbench[["proportions"]][["spillover"]][[level]] %>%
@@ -1096,6 +1102,7 @@ theme_sparse <- function (...)
                pop2 = factor(pop2, levels = unique(spillover_tb$pop2)))
 }
 #' @import tidyverse
+#' @importFrom data.table as.data.table
 .get_lod_proportions <- function(scbench, deconv_res) {
     level <- .match_level(scbench, deconv_res, "lod")
     bench_tb <- scbench$proportions$lod[[level]] %>% as.data.table()
@@ -1106,6 +1113,7 @@ theme_sparse <- function (...)
         as_tibble()
 }
 #' @import tidyverse
+#' @importFrom data.table as.data.table
 .get_lod_results <- function(deconv_res, bench_tb) {
     lod_tb <- bench_tb %>%
         left_join(deconv_res, by = "sample") %>%

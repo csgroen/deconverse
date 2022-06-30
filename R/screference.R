@@ -94,7 +94,7 @@ compute_reference <- function(scref,
         message("CIBERSORTx: Building reference matrix...")
         cx_cache <- filePath(cache_path, "cibersortx")
         cx_ref <- filePath(cx_cache, "out_dir/CIBERSORTx_ref_data_inferred_phenoclasses.CIBERSORTx_ref_data_inferred_refsample.bm.K999.txt")
-        out_path <- cibersortx_scref(scref, cache_dir = cx_cache, ...)
+        out_path <- cibersortx_scref(scref, cache_path = cx_cache, ...)
         reference_res <- cx_ref
         saveRDS(reference_res, file = filePath(cx_cache, "reference_res.RDS"))
     } else if (method == "dwls" | method == "ols" | method == "svr") {
@@ -123,6 +123,7 @@ compute_reference <- function(scref,
     return(reference_res)
 }
 
+#' @export
 print.screference <- function(scref) {
     cat(str_glue("screference object named `{scref$project_name}` with {ncol(scref$seurat_obj)} cells and {length(scref$populations)} populations"))
     cat("\n")

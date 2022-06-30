@@ -6,7 +6,6 @@ To install, run:
 
 ```{r}
 remotes::install_github("csgroen/ggheatmapper")
-remotes::install_github("xuranw/MuSiC")
 remotes::install_github("csgroen/deconverse")
 ```
 

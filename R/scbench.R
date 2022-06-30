@@ -547,6 +547,8 @@ plt_cors_scatter <- function(scbench, method) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `cor_table`, a
 #' table summarizing results
 #'
+#' @importFrom ggheatmapper get_hmPlot update_hmPlot
+#'
 #' @export
 plt_cor_heatmap <- function(scbench) {
     plot_tb <- .aggregate_deconvolution_results(scbench) %>%
@@ -567,6 +569,16 @@ plt_cor_heatmap <- function(scbench) {
               show_dend_row = FALSE,
               rows_title = "Method",
               column_title = "Populations")
+    #-- Add numbers
+    hm <- get_hmPlot(plt)
+    annot_data <- hm$data %>%
+        mutate(lev = ifelse(value < 0.5, "low", "high"))
+    new_hm <- hm +
+        geom_text(aes(x = observations, y = rows, label = signif(value, 3),
+                      color = lev), size = 3, data = annot_data) +
+        scale_color_manual(values = c("low" = "white", "high" = "black")) +
+        guides(color = "none")
+    plt <- update_hmPlot(plt, new_hm)
 
     return(list(heatmap = plt, cor_table = plot_tb))
 }
@@ -579,7 +591,7 @@ plt_cor_heatmap <- function(scbench) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
 #'
-#' @importFrom ggheatmapper ggheatmap align_to_hm
+#' @importFrom ggheatmapper ggheatmap align_to_hm theme_sparse2
 #' @importFrom yardstick rmse_vec
 #' @export
 plt_rmse_heatmap <- function(scbench) {
@@ -594,7 +606,8 @@ plt_rmse_heatmap <- function(scbench) {
         group_by(method) %>%
         summarize(RMSE = sum(RMSE)) %>%
         mutate(method = fct_reorder(method, RMSE, .desc = TRUE),
-               metric = "RMSE") %>%
+               metric = "RMSE",
+               lev = ifelse(RMSE < max(RMSE)/2, "low", "high")) %>%
         arrange(method)
 
 
@@ -612,9 +625,11 @@ plt_rmse_heatmap <- function(scbench) {
 
     annot_plt <- ggplot(annot, aes(metric, method, fill = RMSE)) +
         geom_tile() +
-        geom_text(aes(label=signif(RMSE, 2)), size = 3) +
+        geom_text(aes(label=signif(RMSE, 2), color = lev), size = 3) +
         scale_fill_viridis_c(option = "inferno", limits = c(0, max(annot$RMSE))) +
+        scale_color_manual(values = c("low" = "white", "high" = "black")) +
         labs(x = "Metric", fill = "RMSE\ntotal") +
+        guides(color = "none") +
         theme_sparse2()
 
     #-- Full heatmap
@@ -705,6 +720,7 @@ plt_lod_scatter <- function(scbench, method) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
 #'
+#' @importFrom data.table rbindlist
 #' @export
 plt_spillover_heatmap <- function(scbench) {
     #-- Error handling
@@ -742,7 +758,9 @@ plt_spillover_heatmap <- function(scbench) {
         summarize(sum_rmse = sum(rmse)) %>%
         mutate(metric = "RMSE") %>%
         arrange(sum_rmse) %>%
-        mutate(method = factor(method, levels = method))
+        mutate(method = factor(method, levels = method),
+               lev = ifelse(sum_rmse < max(sum_rmse)/2, "low", "high"))
+
     #-- Heatmap
     spillover_hm <- ggheatmap(plot_tb,
                               colv = "pop_pairs",
@@ -757,9 +775,11 @@ plt_spillover_heatmap <- function(scbench) {
     #-- Add total track
     annot_plt <- ggplot(method_total_error, aes(metric, fct_rev(method), fill = sum_rmse)) +
         geom_tile() +
-        geom_text(aes(label=signif(sum_rmse, 2)), size = 3) +
+        geom_text(aes(label=signif(sum_rmse, 2), color = lev), size = 3) +
         scale_fill_viridis_c(option = "inferno", limits = c(0, max(method_total_error$sum_rmse))) +
+        scale_color_manual(values = c("low" = "white", "high" = "black")) +
         labs(x = "Metric", fill = "RMSE\ntotal") +
+        guides(color = "none") +
         theme_sparse2()
 
     spillover_plt <- align_to_hm(spillover_hm, annot_plt, pos = "right", newplt_size_prop = 0.1, legend_action = "collect")
@@ -801,7 +821,8 @@ plt_lod_heatmap <- function(scbench) {
         group_by(method) %>%
         summarize(mean_lod = mean(lod)) %>%
         arrange(mean_lod) %>%
-        pull(method)
+        pull(method) %>%
+        rev()
     #-- Plot
     lod_hm <- ggheatmap(lods,
                         colv = "population",
@@ -814,6 +835,16 @@ plt_lod_heatmap <- function(scbench) {
                         show_dend_row = FALSE,
                         rows_title = "Method",
                         column_title = "Population")
+    #-- Add numbers
+    hm <- get_hmPlot(lod_hm)
+    annot_data <- hm$data %>%
+        mutate(lev = ifelse(value < max(bench_tb$truth)/2, "low", "high"))
+    new_hm <- hm +
+        geom_text(aes(x = observations, y = rows, label = value,
+                      color = lev), size = 3, data = annot_data) +
+        scale_color_manual(values = c("low" = "white", "high" = "black")) +
+        guides(color = "none")
+    lod_hm <- update_hmPlot(lod_hm, new_hm)
 
     return(list(heatmap = lod_hm, lod_table = lods))
 }

@@ -269,6 +269,7 @@ pseudobulks <- function(scbench,
     }
     scbench$shrunk <- shrink_obj
     scbench$status <- .update_status(scbench$status, "pseudobulks")
+    scbench$level <- level
 
     return(scbench)
 }
@@ -350,7 +351,7 @@ deconvolute <- function(scbench,
     assert(!is.null(scbench$pseudobulk_counts[[type]]))
 
     #-- Cache handling
-    method_cache <- filePath(scbench$cache, scbench$project_name, method, type)
+    method_cache <- filePath(scbench$cache, scbench$level, scbench$project_name, method, type)
     deconv_res <- .scbench_cache_check(method_cache)
     if(!is.null(deconv_res)) {
         message("Found cached results. Returning...")
@@ -993,7 +994,7 @@ theme_sparse <- function (...)
 #' @importFrom R.utils filePath
 #' @importFrom Matrix rowSums
 .get_pseudobulk <- function(scbench, type, level, seed, ncores, ncells, by_batch) {
-    cache_dir <- filePath(scbench$cache, scbench$project_name, "pseudobulks", type)
+    cache_dir <- filePath(scbench$cache, scbench$project_name, level, "pseudobulks", type)
     dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
     cache_loc <- filePath(cache_dir, "pseudobulks.RDS")
     if(file.exists(cache_loc)) {
@@ -1058,9 +1059,7 @@ theme_sparse <- function (...)
                 ps_n <- as.integer(sample_ncells[j])
                 pop_cells <- unlist(pops_pat_cells[[samp]][names(sample_ncells)[j]])
                 if(length(pop_cells) < ps_n) {
-                    stop("Can't compute mixtures with this number of cells.
-                         Use a larger dataset for drawing pseudobulk mixtures, or
-                         make mixtures with fewer cells.")
+                    warning("Some cell profiles had to be repeated... `ncells` might be set too high for this dataset.")
                 }
                 sample(pop_cells, ps_n, replace = TRUE)
             }) %>% reduce(c)

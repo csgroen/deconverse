@@ -351,7 +351,7 @@ deconvolute <- function(scbench,
     assert(!is.null(scbench$pseudobulk_counts[[type]]))
 
     #-- Cache handling
-    method_cache <- filePath(scbench$cache, scbench$level, scbench$project_name, method, type)
+    method_cache <- filePath(scbench$cache, scbench$project_name, scbench$level, method, type)
     deconv_res <- .scbench_cache_check(method_cache)
     if(!is.null(deconv_res)) {
         message("Found cached results. Returning...")
@@ -1059,7 +1059,7 @@ theme_sparse <- function (...)
                 ps_n <- as.integer(sample_ncells[j])
                 pop_cells <- unlist(pops_pat_cells[[samp]][names(sample_ncells)[j]])
                 if(length(pop_cells) < ps_n) {
-                    warning("Some cell profiles had to be repeated... `ncells` might be set too high for this dataset.")
+                    warning("--- Some cell profiles had to be repeated... `ncells` might be set too high for this dataset.")
                 }
                 sample(pop_cells, ps_n, replace = TRUE)
             }) %>% reduce(c)
@@ -1075,15 +1075,13 @@ theme_sparse <- function (...)
                 ps_n <- as.integer(sample_ncells[j])
                 pop_cells <- unlist(pops_cells[names(sample_ncells)[j]])
                 if(length(pop_cells) < ps_n) {
-                    stop("Can't compute mixtures with this number of cells.
-                         Use a larger dataset for drawing pseudobulk mixtures, or
-                         make mixtures with fewer cells.")
+                    warning("--- Some cell profiles had to be repeated... `ncells` might be set too high for this dataset.")
                 }
                 sample(pop_cells, ps_n)
             }) %>% reduce(c)
             rowSums(scbench$ref_data[,sample_cells]@assays$RNA@counts)
         }, mc.cores = ncores)
-        message("Joining matrix...")
+        message("-- Joining matrix...")
     }
     pb_mat <- reduce(pseudobulks, cbind)
     colnames(pb_mat) <- paste0("s", 1:ncol(pb_mat))

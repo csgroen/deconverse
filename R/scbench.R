@@ -57,13 +57,13 @@ new_scbench <- function(ref_scrna,
     return(scbench)
 }
 
-# Proportions ----------------------
+# Mixtures ----------------------
 
-#' Simulate sample population proportions given bounds in an `scbench` object
+#' Simulate sample population mixtures given bounds in an `scbench` object
 #'
 #' @param scbench an `scbench` object
 #' @param nsamps an integer representing the number of samples to simulate
-#' @param seed an integer representing a "seed", for reproducibility of proportions.
+#' @param seed an integer representing a "seed", for reproducibility of mixtures.
 #'
 #' @import tidyverse testit
 #' @importFrom hitandrun hitandrun
@@ -72,14 +72,14 @@ new_scbench <- function(ref_scrna,
 #' @return an object of class `scbench`
 #'
 #' @export
-population_proportions <- function(scbench, nsamps = 1000, seed = NULL) {
-    message("Simulating population proportions given bounds...")
+mixtures_population <- function(scbench, nsamps = 1000, seed = NULL) {
+    message("Simulating population mixtures given bounds...")
     assert(class(scbench) == "scbench")
     bounds <- scbench$pop_bounds
     #-- Hit-and-run MCMC
     samples <- lapply(bounds, .fit_hitandrun, n.samples = nsamps, seed)
 
-    #-- Calculate higher level proportions
+    #-- Calculate higher level mixtures
     levels <- str_remove(names(bounds), "^l") %>% str_remove("_.*") %>% as.numeric()
     nlevs <- max(levels)
     pop_props <- list(l1 = samples[["l1"]])
@@ -97,7 +97,7 @@ population_proportions <- function(scbench, nsamps = 1000, seed = NULL) {
             missing_coarse <- setdiff(colnames(coarse_tb), rep_coarse)
             names(ln_names) <- rep_coarse
 
-            #-- Calculate finer grained proportions
+            #-- Calculate finer grained mixtures
             fine_pops <- lapply(1:length(ln_names), function(i) {
                 coarse_tb[,names(ln_names)[i]] * samples[[ln_names[i]]]
             }) %>% bind_cols() %>% as.data.frame()
@@ -109,13 +109,13 @@ population_proportions <- function(scbench, nsamps = 1000, seed = NULL) {
     }
     pop_props <- lapply(pop_props, as.data.frame)
 
-    scbench[["proportions"]][["population"]] <- pop_props
-    scbench$status <- .update_status(scbench$status, "proportions")
+    scbench[["mixtures"]][["population"]] <- pop_props
+    scbench$status <- .update_status(scbench$status, "mixtures")
 
     return(scbench)
 }
 
-#' Simulate proportions for measuring spillover between all pairs of populations
+#' Simulate mixtures for measuring spillover between all pairs of populations
 #' in an `scbench` object
 #'
 #' @param scbench an `scbench` object
@@ -126,15 +126,15 @@ population_proportions <- function(scbench, nsamps = 1000, seed = NULL) {
 #' @return an object of class `scbench`
 #'
 #' @export
-spillover_proportions <- function(scbench, step = 0.05) {
-    message("Simulating spillover proportions between population pairs...")
+mixtures_spillover <- function(scbench, step = 0.05) {
+    message("Simulating spillover mixtures between population pairs...")
     #-- Checks
     assert(class(scbench) == "scbench")
-    if(is.null(scbench[["proportions"]][["population"]])) {
-        stop("`population_proportions` needs to be run before `spillover_proportions`")
+    if(is.null(scbench[["mixtures"]][["population"]])) {
+        stop("`population_mixtures` needs to be run before `spillover_mixtures`")
     }
     #-- Get combinations
-    pop_props <- scbench[["proportions"]][["population"]]
+    pop_props <- scbench[["mixtures"]][["population"]]
     base_props <- seq(0, 1, by = step)
 
     spillover_props <- lapply(pop_props, function(l_pop_props) {
@@ -153,12 +153,12 @@ spillover_proportions <- function(scbench, step = 0.05) {
             return(combo_mat)
         }) %>% bind_rows()
     })
-    scbench[["proportions"]][["spillover"]] <- spillover_props
+    scbench[["mixtures"]][["spillover"]] <- spillover_props
     scbench$status <- .update_status(scbench$status, "spillover")
     return(scbench)
 }
 
-#' Simulate proportions to find the limit of detection of each population in
+#' Simulate mixtures to find the limit of detection of each population in
 #' mixtures in an `scbench` object
 #'
 #' @param scbench an `scbench` object
@@ -169,17 +169,17 @@ spillover_proportions <- function(scbench, step = 0.05) {
 #'
 #' @return an object of class `scbench`
 #' @export
-lod_proportions <- function(scbench, max_prop = 0.1, step = 0.005) {
+mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
     message("Simulating limits of detection for each population...")
     #-- Checks
     assert(class(scbench) == "scbench")
-    if(is.null(scbench[["proportions"]][["population"]])) {
-        stop("`population_proportions` needs to be run before `spillover_proportions`")
+    if(is.null(scbench[["mixtures"]][["population"]])) {
+        stop("`population_mixtures` needs to be run before `spillover_mixtures`")
     }
     #-- Get step
-    pop_props <- scbench[["proportions"]][["population"]]
+    pop_props <- scbench[["mixtures"]][["population"]]
     prop_steps <- seq(0, max_prop, by = step)
-    #-- Get LoD proportions
+    #-- Get LoD mixtures
     lod_props <- lapply(pop_props, function(l_pop_props) {
         mean_prop <- colMeans(l_pop_props)
         ref_props <- mean_prop/sum(mean_prop)
@@ -201,16 +201,16 @@ lod_proportions <- function(scbench, max_prop = 0.1, step = 0.005) {
         }) %>%
             bind_rows()
     } )
-    scbench[["proportions"]][["lod"]] <- lod_props
+    scbench[["mixtures"]][["lod"]] <- lod_props
     scbench$status <- .update_status(scbench$status, "lod")
     return(scbench)
 }
 # Pseudobulk and deconvolution ------------------------
 #' Generate pseudobulk gene expression from single-cell RNA-seq given
-#' population proportions in an `scbench` object
+#' population mixtures in an `scbench` object
 #'
 #' @param scbench an `scbench` object that has been evaluated by
-#' `population_proportions`
+#' `population_mixtures`
 #' @param level a string character, the reference data level for pseudobulk pooling
 #' (e.g. `"l1"`, `"l2"`)
 #' @param ncells an integer, the number of cells to pool into pseudobulk.
@@ -219,7 +219,7 @@ lod_proportions <- function(scbench, max_prop = 0.1, step = 0.005) {
 #' estimating the pseudobulks
 #' @param by_batch a boolean, if TRUE, pseudobulks are estimated by batch using
 #' the `batch_id` provided when creating the object.
-#' @param seed an integer representing a "seed", for reproducibility of proportions.
+#' @param seed an integer representing a "seed", for reproducibility of mixtures.
 #'
 #' @import tidyverse
 #'
@@ -234,16 +234,16 @@ pseudobulks <- function(scbench,
                         by_batch = FALSE,
                         seed = NULL) {
     assert(class(scbench) == "scbench")
-    assert("proportions" %in% names(scbench))
+    assert("mixtures" %in% names(scbench))
     assert(!scbench$shrunk)
 
     #-- Get level
     if(is.null(level)) {
-        level <- names(scbench[["proportions"]][["population"]])[length(pop_props)]
+        level <- names(scbench[["mixtures"]][["population"]])[length(pop_props)]
     }
 
     #-- Pseudobulks to generate
-    types <- names(scbench[["proportions"]])
+    types <- names(scbench[["mixtures"]])
     pseudobulks <- list()
     for (type in types) {
         if(type == "spillover") {
@@ -256,7 +256,7 @@ pseudobulks <- function(scbench,
                                   ncores = ncores, ncells = ncells_run,
                                   by_batch = by_batch)
         if(type == "population") {
-            scbench[["proportions"]][[type]][[level]] <- pb_res$props
+            scbench[["mixtures"]][[type]][[level]] <- pb_res$props
         }
         scbench[["pseudobulk_counts"]][[type]] <- pb_res$pseudobulk
         rm(pb_res)
@@ -324,7 +324,7 @@ deconvolute_all <- function(scbench,
 #' and pre-computed references for methods that require them.
 #' @param method a string with the name of the deconvolution method. For available
 #' methods, consult `deconvolution_methods()`
-#' @param type type of proportions to deconvolute. One of: `"population"`,
+#' @param type type of mixtures to deconvolute. One of: `"population"`,
 #' `"spillover"` or `"lod"`
 #' @param pseudobulk_norm the normalization method for pseudobulk counts. One of:
 #' `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
@@ -400,7 +400,7 @@ deconvolute <- function(scbench,
 #' `deconvolute_all`
 #' @param methods NULL, a string, or vector of strings. Results will be returned
 #' for the methods indicated. See `deconvolution_methods()` for methods.
-#' @param type type of deconvoluted proportions. One of: `"population"`,
+#' @param type type of deconvoluted mixtures. One of: `"population"`,
 #' `"spillover"` or `"lod"`
 #'
 #' @import tidyverse
@@ -410,7 +410,7 @@ deconvolute <- function(scbench,
 #' @export
 get_benchmark_results <- function(scbench, methods = NULL, type = "population") {
     assert(class(scbench) == "scbench")
-    assert(!is.null(scbench[["proportions"]]))
+    assert(!is.null(scbench[["mixtures"]]))
     assert(!is.null(scbench[["deconvolution"]]))
 
     if(is.null(methods)) {
@@ -428,7 +428,7 @@ get_benchmark_results <- function(scbench, methods = NULL, type = "population") 
     } else if(type == "spillover") {
         results <- lapply(methods, function(method) {
             deconv_res <- scbench$deconvolution[["spillover"]][[method]]
-            spillover_tb <- .get_spillover_proportions(scbench, deconv_res)
+            spillover_tb <- .get_spillover_mixtures(scbench, deconv_res)
             results <- .get_spillover_results(deconv_res, spillover_tb) %>%
                 mutate(mixture = paste0(pop1, "|", pop2),
                        method = method) %>%
@@ -438,7 +438,7 @@ get_benchmark_results <- function(scbench, methods = NULL, type = "population") 
     } else if(type == "lod") {
         results <- lapply(methods, function(method) {
             deconv_res <- scbench$deconvolution[["lod"]][[method]]
-            lod_tb <- .get_lod_proportions(scbench, deconv_res)
+            lod_tb <- .get_lod_mixtures(scbench, deconv_res)
             results <- .get_lod_results(deconv_res, lod_tb)
             results <- results$lod_tb %>%
                 select(sample, population, truth, pred = est, method) %>%
@@ -454,23 +454,23 @@ get_benchmark_results <- function(scbench, methods = NULL, type = "population") 
 
 # Plotting -----------
 
-#' Plot sample population proportions from an `scbench` object
+#' Plot sample population mixtures from an `scbench` object
 #' @param scbench an `scbench` object that has been evaluated by
-#' `population_proportions`
+#' `population_mixtures`
 #' @param nshow an integer, the number of samples to plot
 #' @param order_by a string of a name of a population to order the samples with
-#' increasing proportions of `order_by`
+#' increasing mixtures of `order_by`
 #'
 #' @import tidyverse
 #'
 #' @return a ggplot object
 #'
 #' @export
-plt_population_proportions <- function(scbench, nshow = 50, order_by = NULL) {
+plt_population_mixtures <- function(scbench, nshow = 50, order_by = NULL) {
     #-- Get data
     assert(class(scbench) == "scbench")
     assert("pop_props" %in% names(scbench))
-    pop_props <- scbench[["proportions"]][["population"]]
+    pop_props <- scbench[["mixtures"]][["population"]]
 
     pop_props <- lapply(pop_props, as_tibble)
     nlevs <- length(pop_props)
@@ -499,7 +499,7 @@ plt_population_proportions <- function(scbench, nshow = 50, order_by = NULL) {
 }
 
 #' Plot correlations by population between deconvolution results
-#' for simulated populations and true proportions used for the pseudobulk
+#' for simulated populations and true mixtures used for the pseudobulk
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #' @param method a string, one of `deconvolution_methods()`
@@ -540,7 +540,7 @@ plt_cors_scatter <- function(scbench, method) {
 }
 
 #' Plot heatmap of correlation between deconvolution results for simulated
-#' populations and true proportions used for the pseudobulks
+#' populations and true mixtures used for the pseudobulks
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #'
@@ -584,7 +584,7 @@ plt_cor_heatmap <- function(scbench) {
 }
 
 #' Plot RMSE between deconvolution results for simulated populations and
-#' true proportions used for the pseudobulks
+#' true mixtures used for the pseudobulks
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #'
@@ -638,7 +638,7 @@ plt_rmse_heatmap <- function(scbench) {
     return(list(heatmap = plt, rmse_table = plot_tb))
 }
 
-#' Plot correlations between deconvolution results and spillover proportions
+#' Plot correlations between deconvolution results and spillover mixtures
 #' between each pair of populations
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
@@ -656,8 +656,8 @@ plt_spillover_scatter <- function(scbench, method) {
 
     #-- Get deconv estimations
     deconv_res <- scbench$deconvolution$spillover[[method]]
-    #-- Get proportions
-    spillover_tb <- .get_spillover_proportions(scbench, deconv_res)
+    #-- Get mixtures
+    spillover_tb <- .get_spillover_mixtures(scbench, deconv_res)
 
     #-- Get estimations and join
     plot_tb <- .get_spillover_results(deconv_res, spillover_tb)
@@ -697,8 +697,8 @@ plt_lod_scatter <- function(scbench, method) {
     deconv_res <- scbench$deconvolution$lod[[method]]
     level <- .match_level(scbench, deconv_res, "lod")
 
-    #-- Get proportions
-    bench_tb <- .get_lod_proportions(scbench, deconv_res)
+    #-- Get mixtures
+    bench_tb <- .get_lod_mixtures(scbench, deconv_res)
     lod_res <- .get_lod_results(deconv_res, bench_tb)
 
     plt <- ggplot(lod_res$lod_tb, aes(est, truth)) +
@@ -733,8 +733,8 @@ plt_spillover_heatmap <- function(scbench) {
         scbench$deconvolution$spillover[[method]]
     })
     level <- .match_level(scbench, all_deconv_res[[1]], "spillover")
-    #-- Get proportions
-    spillover_tb <- .get_spillover_proportions(scbench, all_deconv_res[[1]])
+    #-- Get mixtures
+    spillover_tb <- .get_spillover_mixtures(scbench, all_deconv_res[[1]])
 
     #-- Get estimations and join
     all_res <- lapply(all_deconv_res, .get_spillover_results, spillover_tb)
@@ -803,8 +803,8 @@ plt_lod_heatmap <- function(scbench) {
     all_deconv_res <- lapply(methods, function(method) { scbench$deconvolution$lod[[method]]})
     level <- .match_level(scbench, all_deconv_res[[1]], "lod")
 
-    #-- Get proportions and estimations, calculate limits of detection
-    bench_tb <- .get_lod_proportions(scbench, all_deconv_res[[1]])
+    #-- Get mixtures and estimations, calculate limits of detection
+    bench_tb <- .get_lod_mixtures(scbench, all_deconv_res[[1]])
     all_lod_res <- lapply(all_deconv_res, .get_lod_results, bench_tb)
     lod_tb <- lapply(all_lod_res, function(method_res) { method_res$lod_annot }) %>%
         bind_rows() %>%
@@ -866,7 +866,7 @@ plt_lod_heatmap <- function(scbench) {
 #' @import tidyverse
 .match_level <- function(scbench, deconv_res, method) {
     pop_names <- str_subset(colnames(deconv_res), "frac") %>% str_remove("frac_")
-    level_match <- sapply(scbench[["proportions"]][[method]], function(props) {
+    level_match <- sapply(scbench[["mixtures"]][[method]], function(props) {
         all(pop_names %in% colnames(props))
     }) %>% which()
     level <- names(level_match)
@@ -926,7 +926,7 @@ theme_sparse <- function (...)
 }
 #' @import tidyverse
 .aggregate_deconvolution_results <- function(scbench) {
-    pop_props <- scbench[["proportions"]][["population"]]
+    pop_props <- scbench[["mixtures"]][["population"]]
     #-- Get deconv results
     deconv_res <- bind_rows(scbench$deconvolution$population)
 
@@ -951,12 +951,12 @@ theme_sparse <- function (...)
 }
 .update_status <- function(prev = NULL, status = NULL) {
     if(is.null(prev)) {
-        status <- c("Bounds [x] | Proportions [ ] | Spillover [ ] | Limit of Detection [ ] | Pseudobulks [ ]")
+        status <- c("Bounds [x] | Mixtures [ ] | Spillover [ ] | Limit of Detection [ ] | Pseudobulks [ ]")
         return(status)
     }
     prev_vec <- str_split_fixed(prev, pattern = " \\| ", 5) %>% as.vector()
-    if(status == "proportions") {
-        prev_vec[2] <- "Proportions [x]"
+    if(status == "mixtures") {
+        prev_vec[2] <- "Mixtures [x]"
     } else if(status == "spillover") {
         prev_vec[3] <- "Spillover [x]"
     } else if (status == "lod") {
@@ -970,7 +970,7 @@ theme_sparse <- function (...)
 #' @import tidyverse
 .get_benchmark_fractions <- function(scbench, deconv_res) {
     level <- .match_level(scbench, deconv_res, "population")
-    bench_tb <- scbench[["proportions"]][["population"]][[level]] %>%
+    bench_tb <- scbench[["mixtures"]][["population"]][[level]] %>%
         rownames_to_column("sample") %>%
         mutate(sample = ifelse(str_detect(sample, "s"), sample, paste0("s", sample))) %>%
         tibble() %>%
@@ -1002,7 +1002,7 @@ theme_sparse <- function (...)
         return(pb_res)
     }
     message("Generating pseudobulks for ", type, " analysis...")
-    pop_props <- scbench$proportions[[type]]
+    pop_props <- scbench$mixtures[[type]]
 
     #-- Get metadata
     if(type == "population") {
@@ -1033,7 +1033,7 @@ theme_sparse <- function (...)
         incomplete_pids <- names(ref_incomplete)[ref_incomplete]
         if(length(incomplete_pids) > 0) {
             warning(str_glue("Batches {paste(incomplete_pids, collapse = ', ')} don't contain at least one cell with each annotation.
-                             Adapting proportions for these samples..."))
+                             Adapting mixtures for these samples..."))
         }
         #-- Get cells per sample
         nsamp_id <- trunc(nsamps/length(upid))
@@ -1096,9 +1096,9 @@ theme_sparse <- function (...)
 
 #' @import tidyverse
 #' @importFrom data.table as.data.table
-.get_spillover_proportions <- function(scbench, deconv_res) {
+.get_spillover_mixtures <- function(scbench, deconv_res) {
     level <- .match_level(scbench, deconv_res, method = "spillover")
-    bench_tb <- scbench[["proportions"]][["spillover"]][[level]] %>%
+    bench_tb <- scbench[["mixtures"]][["spillover"]][[level]] %>%
         tibble() %>%
         mutate(
             sample = paste0("s", 1:n()),
@@ -1134,9 +1134,9 @@ theme_sparse <- function (...)
 }
 #' @import tidyverse
 #' @importFrom data.table as.data.table
-.get_lod_proportions <- function(scbench, deconv_res) {
+.get_lod_mixtures <- function(scbench, deconv_res) {
     level <- .match_level(scbench, deconv_res, "lod")
-    bench_tb <- scbench$proportions$lod[[level]] %>% as.data.table()
+    bench_tb <- scbench$mixtures$lod[[level]] %>% as.data.table()
     bench_tb[,truth := get(population), by = population]
     bench_tb <- bench_tb %>%
         mutate(sample = paste0("s", 1:n())) %>%

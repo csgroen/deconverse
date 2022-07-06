@@ -22,7 +22,7 @@ and pre-computed references for methods that require them.}
 \item{method}{a string with the name of the deconvolution method. For available
 methods, consult `deconvolution_methods()`}
 
-\item{type}{type of proportions to deconvolute. One of: `"population"`,
+\item{type}{type of mixtures to deconvolute. One of: `"population"`,
 `"spillover"` or `"lod"`}
 
 \item{pseudobulk_norm}{the normalization method for pseudobulk counts. One of:

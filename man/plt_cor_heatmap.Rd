@@ -3,7 +3,7 @@
 \name{plt_cor_heatmap}
 \alias{plt_cor_heatmap}
 \title{Plot heatmap of correlation between deconvolution results for simulated
-populations and true proportions used for the pseudobulks}
+populations and true mixtures used for the pseudobulks}
 \usage{
 plt_cor_heatmap(scbench)
 }
@@ -17,5 +17,5 @@ table summarizing results
 }
 \description{
 Plot heatmap of correlation between deconvolution results for simulated
-populations and true proportions used for the pseudobulks
+populations and true mixtures used for the pseudobulks
 }

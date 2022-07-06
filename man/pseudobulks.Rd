@@ -3,7 +3,7 @@
 \name{pseudobulks}
 \alias{pseudobulks}
 \title{Generate pseudobulk gene expression from single-cell RNA-seq given
-population proportions in an `scbench` object}
+population mixtures in an `scbench` object}
 \usage{
 pseudobulks(
   scbench,
@@ -17,7 +17,7 @@ pseudobulks(
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
-`population_proportions`}
+`population_mixtures`}
 
 \item{level}{a string character, the reference data level for pseudobulk pooling
 (e.g. `"l1"`, `"l2"`)}
@@ -31,12 +31,12 @@ estimating the pseudobulks}
 \item{by_batch}{a boolean, if TRUE, pseudobulks are estimated by batch using
 the `batch_id` provided when creating the object.}
 
-\item{seed}{an integer representing a "seed", for reproducibility of proportions.}
+\item{seed}{an integer representing a "seed", for reproducibility of mixtures.}
 }
 \value{
 an object of class `scbench`
 }
 \description{
 Generate pseudobulk gene expression from single-cell RNA-seq given
-population proportions in an `scbench` object
+population mixtures in an `scbench` object
 }

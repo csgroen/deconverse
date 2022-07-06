@@ -3,7 +3,7 @@
 \name{plt_cors_scatter}
 \alias{plt_cors_scatter}
 \title{Plot correlations by population between deconvolution results
-for simulated populations and true proportions used for the pseudobulk}
+for simulated populations and true mixtures used for the pseudobulk}
 \usage{
 plt_cors_scatter(scbench, method)
 }
@@ -18,5 +18,5 @@ a ggplot object
 }
 \description{
 Plot correlations by population between deconvolution results
-for simulated populations and true proportions used for the pseudobulk
+for simulated populations and true mixtures used for the pseudobulk
 }

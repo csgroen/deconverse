@@ -3,7 +3,7 @@
 \name{plt_rmse_heatmap}
 \alias{plt_rmse_heatmap}
 \title{Plot RMSE between deconvolution results for simulated populations and
-true proportions used for the pseudobulks}
+true mixtures used for the pseudobulks}
 \usage{
 plt_rmse_heatmap(scbench)
 }
@@ -17,5 +17,5 @@ table summarizing results
 }
 \description{
 Plot RMSE between deconvolution results for simulated populations and
-true proportions used for the pseudobulks
+true mixtures used for the pseudobulks
 }

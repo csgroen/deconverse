@@ -13,7 +13,7 @@ get_benchmark_results(scbench, methods = NULL, type = "population")
 \item{methods}{NULL, a string, or vector of strings. Results will be returned
 for the methods indicated. See `deconvolution_methods()` for methods.}
 
-\item{type}{type of deconvoluted proportions. One of: `"population"`,
+\item{type}{type of deconvoluted mixtures. One of: `"population"`,
 `"spillover"` or `"lod"`}
 
 \item{a}{`tibble` with results.}

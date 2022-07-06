@@ -2,7 +2,7 @@
 % Please edit documentation in R/scbench.R
 \name{plt_spillover_scatter}
 \alias{plt_spillover_scatter}
-\title{Plot correlations between deconvolution results and spillover proportions
+\title{Plot correlations between deconvolution results and spillover mixtures
 between each pair of populations}
 \usage{
 plt_spillover_scatter(scbench, method)
@@ -17,6 +17,6 @@ plt_spillover_scatter(scbench, method)
 a ggplot object
 }
 \description{
-Plot correlations between deconvolution results and spillover proportions
+Plot correlations between deconvolution results and spillover mixtures
 between each pair of populations
 }

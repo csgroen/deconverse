@@ -1,10 +1,42 @@
-#' Installs CIBERSORTx docker
+#' Installs CIBERSORTx container using docker or singularity
 #'
-#' Needs `docker` to be installed in system and available in path
+#' @param container_type container software used. one of:
+#' "docker" or "singularity"
 #'
+#' @importFrom purrr possibly
 #' @export
-install_cibersortx <- function() {
-    system("docker pull cibersortx/fractions")
+install_cibersortx <- function(container_type = c("docker", "singularity")[1]) {
+    if(container_type == "docker") {
+        if(!.docker_check()) {
+            stop("Error: docker is not installed or not available in PATH. See: https://docs.docker.com/get-docker/ or use singularity")
+        }
+        system("docker pull cibersortx/fractions")
+    } else {
+        #-- Check if singularity is available
+        if(!.singularity_check()) {
+            stop("Error: singularity is not installed or not available in PATH. See: https://docs.sylabs.io/guides/3.0/user-guide/installation.html or use docker.")
+        }
+        deconverse_path <- find.package("deconverse")[1]
+        mv_cx <- paste0("mv fractions_latest.sif ", deconverse_path, "/cibersortx.sif")
+        system("singularity pull docker://cibersortx/fractions")
+        system(mv_cx)
+    }
+    message("CIBERSORTx successfully installed")
+    invisible(TRUE)
+}
+
+.docker_check <- function() {
+    purrr::possibly(function() {
+        system("docker --help", intern = TRUE)
+        return(TRUE)
+    }, otherwise = FALSE)()
+}
+
+.singularity_check <- function() {
+    purrr::possibly(function() {
+        system("singularity --help", intern = TRUE)
+        return(TRUE)
+    }, otherwise = FALSE)()
 }
 
 #' Compute reference signature matrix from `screference` object using
@@ -58,7 +90,20 @@ cibersortx_scref <- function(scref,
     data.table::fwrite(ref_data, file = ref_fname, sep = "\t",
                            row.names = TRUE, col.names = TRUE)
     rm(ref_data)
-    docker_call <- str_glue('docker run -v {data_path}:/src/data/ -v {out_path}:/src/outdir cibersortx/fractions --username {username} --token {token} --rmbatchSmode TRUE --verbose TRUE --QN FALSE --single_cell TRUE --refsample ref_data.txt')
+
+    #-- Create docker call
+    header <- case_when(
+        .docker_check() ~ "docker run",
+        .singularity_check() ~ "srun",
+        TRUE ~ "")
+    if(header == "") {
+        stop("No CIBERSORTx container found. Please run `install_cibersortx()`")
+    }
+    container_address <- case_when(
+        header == "docker run" ~ "cibersortx/fractions",
+        TRUE ~ paste0(find.package("deconverse"), "/cibersortx.sif")
+    )
+    docker_call <- str_glue('{header} -v {data_path}:/src/data/ -v {out_path}:/src/outdir {container_address} --username {username} --token {token} --rmbatchSmode TRUE --verbose TRUE --QN FALSE --single_cell TRUE --refsample ref_data.txt')
     rm(ref); gc()
     system(docker_call)
 
@@ -123,7 +168,18 @@ cibersortx_deconvolute <- function(bulk_data,
     file.copy(from = ref, to = filePath(data_path, "sig_mat.txt"), overwrite = TRUE)
 
     #-- Running CIBERSORTx in docker
-    docker_call <- str_glue('docker run -v {data_path}:/src/data/ -v {out_path}:/src/outdir cibersortx/fractions --username {username} --token {token} --rmbatchBmode TRUE --verbose TRUE --QN FALSE --mixture data.txt --sigmatrix sig_mat.txt')
+    header <- case_when(
+        .docker_check() ~ "docker run",
+        .singularity_check() ~ "srun",
+        TRUE ~ "")
+    if(header == "") {
+        stop("No CIBERSORTx container found. Please run `install_cibersortx()`")
+    }
+    container_address <- case_when(
+        header == "docker run" ~ "cibersortx/fractions",
+        TRUE ~ paste0(find.package("deconverse"), "/cibersortx.sif")
+    )
+    docker_call <- str_glue('{header} run -v {data_path}:/src/data/ -v {out_path}:/src/outdir {container_address} --username {username} --token {token} --rmbatchBmode TRUE --verbose TRUE --QN FALSE --mixture data.txt --sigmatrix sig_mat.txt')
     rm(ref); rm(bulk_data); gc()
     message("-- Running CIBERSORTx...")
     system(docker_call)

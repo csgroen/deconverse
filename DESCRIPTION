@@ -1,7 +1,7 @@
 Package: deconverse
 Type: Package
 Title: Benchmarking of bulk deconvolution methods
-Version: 0.1.0
+Version: 0.1.1
 Author: Clarice S Groeneveld
 Maintainer: Clarice S Groeneveld <clari.groeneveld@gmail.com>
 Description: More about what it does (maybe more than one line)

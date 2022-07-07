@@ -2,10 +2,14 @@
 % Please edit documentation in R/cibersortx.R
 \name{install_cibersortx}
 \alias{install_cibersortx}
-\title{Installs CIBERSORTx docker}
+\title{Installs CIBERSORTx container using docker or singularity}
 \usage{
-install_cibersortx()
+install_cibersortx(container_type = c("docker", "singularity")[1])
+}
+\arguments{
+\item{container_type}{container software used. one of:
+"docker" or "singularity"}
 }
 \description{
-Needs `docker` to be installed in system and available in path
+Installs CIBERSORTx container using docker or singularity
 }

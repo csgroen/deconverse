@@ -93,8 +93,8 @@ cibersortx_scref <- function(scref,
 
     #-- Create docker call
     header <- case_when(
-        .docker_check() ~ "docker run",
-        .singularity_check() ~ "singularity run",
+        .docker_check() ~ str_glue("docker run -v {data_path}:/src/data/ -v {out_path}:/src/outdir"),
+        .singularity_check() ~ str_glue("singularity run -B {data_path}:/src/data/ -B {out_path}:/src/outdir") ,
         TRUE ~ "")
     if(header == "") {
         stop("No CIBERSORTx container found. Please run `install_cibersortx()`")
@@ -103,7 +103,7 @@ cibersortx_scref <- function(scref,
         header == "docker run" ~ "cibersortx/fractions",
         TRUE ~ paste0(find.package("deconverse"), "/cibersortx.sif")
     )
-    docker_call <- str_glue('{header} -v {data_path}:/src/data/ -v {out_path}:/src/outdir {container_address} --username {username} --token {token} --rmbatchSmode TRUE --verbose TRUE --QN FALSE --single_cell TRUE --refsample ref_data.txt')
+    docker_call <- str_glue('{header} {container_address} --username {username} --token {token} --rmbatchSmode TRUE --verbose TRUE --QN FALSE --single_cell TRUE --refsample ref_data.txt')
     rm(ref); gc()
     system(docker_call)
 

@@ -94,7 +94,7 @@ cibersortx_scref <- function(scref,
     #-- Create docker call
     header <- case_when(
         .docker_check() ~ "docker run",
-        .singularity_check() ~ "srun",
+        .singularity_check() ~ "singularity run",
         TRUE ~ "")
     if(header == "") {
         stop("No CIBERSORTx container found. Please run `install_cibersortx()`")
@@ -170,7 +170,7 @@ cibersortx_deconvolute <- function(bulk_data,
     #-- Running CIBERSORTx in docker
     header <- case_when(
         .docker_check() ~ "docker run",
-        .singularity_check() ~ "srun",
+        .singularity_check() ~ "singularity run",
         TRUE ~ "")
     if(header == "") {
         stop("No CIBERSORTx container found. Please run `install_cibersortx()`")

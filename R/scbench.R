@@ -275,7 +275,7 @@ pseudobulks <- function(scbench,
 }
 #' @export
 deconvolution_methods <- function() {
-    c("cibersortx", "music", "dwls", "ols", "svr")
+    c("ols", "dwls", "svr", "cibersortx", "music",  "bayesprism", "bisque")
 }
 
 #' Deconvolute `scbench` object using all methods with default settings
@@ -308,9 +308,9 @@ deconvolute_all <- function(scbench,
         message("========= Deconvoluting pseudobulks for ", type, " analysis ==========")
         for(method in methods) {
             if(method == "cibersortx") {
-                scbench <- deconvolute(scbench, scref, method = method, type = type, ...)
+                scbench <- deconvolute.scbench(scbench, scref, method = method, type = type, ...)
             } else {
-                scbench <- deconvolute(scbench, scref, method = method, type = type)
+                scbench <- deconvolute.scbench(scbench, scref, method = method, type = type)
             }
         }
     }
@@ -339,9 +339,9 @@ deconvolute_all <- function(scbench,
 #' @return an object of class `scbench`
 #'
 #' @export
-deconvolute <- function(scbench,
+deconvolute.scbench <- function(scbench,
                         scref,
-                        method = "ols",
+                        method = deconvolution_methods()[1],
                         type = c("population", "spillover", "lod")[1],
                         pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
                         ...) {
@@ -385,12 +385,73 @@ deconvolute <- function(scbench,
         assert(!is.null(scref$cached_results[["dwls"]]))
         message("Running SVR using the DWLS signature matrix...")
         deconv_res <- svr_deconvolute(data, scref, ...)
+    } else if(method == "bayesprism") {
+        message("Running BayesPrism...")
+        deconv_res <- bayesprism_deconvolute(data, scref, cache_path = method_cache, ...)
+    } else if(method == "bisque") {
+        message("Running Bisque...")
+        deconv_res <- bisque_deconvolute(data, scref)
     }
+
     #-- Save to cache
     saveRDS(deconv_res, file = filePath(method_cache, "deconv_res.RDS"))
     #-- Return
     scbench[["deconvolution"]][[type]][[method]] <- deconv_res
     return(scbench)
+}
+
+#' Deconvolute bulk RNA-seq matrix using a chosen method
+#'
+#' @param bulk_data a count or linear-normalized (cpm, etc) matrix of genes-by-samples
+#' @param scref an `screference` object containing single-cell reference data
+#' and pre-computed references for methods that require them.
+#' @param method a string with the name of the deconvolution method. For available
+#' methods, consult `deconvolution_methods()`
+#' @param bulk_norm the normalization to be applied in the bulk data. One of:
+#' `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
+#' for using the mean library size of the pseudobulk data to normalize. If already
+#' normalized, make sure to choose `"none"`.
+#' @param ... other parameters, passed to the method wrapper, enables the user
+#' to change the method parameters. See: `deconvolute_{method}` where `{method}`
+#' is the method name in lowercase for method-specific parameters
+#'
+#' @import tidyverse
+#' @return an object of class `scbench`
+#'
+#' @export
+deconvolute.matrix <- function(bulk_data, scref,
+                               method = deconvolution_methods()[1],
+                               bulk_norm = c("rpm", "none", "proportional_fitting")[3],
+                               ...) {
+    assert(class(scref) == "screference")
+    #-- Compute
+    if(method == "cibersortx") {
+        message("Running CIBERSORTx...")
+        assert(!is.null(scref$cached_results[["cibersortx"]]))
+        deconv_res <- cibersortx_deconvolute(data, scref, cache_path = method_cache, ...)
+    } else if (method == "music") {
+        message("Running MuSiC...")
+        deconv_res <- music_deconvolute(data, scref, ...)
+    } else if (method == "dwls") {
+        message("Running DWLS...")
+        assert(!is.null(scref$cached_results[["dwls"]]))
+        deconv_res <- dwls_deconvolute(data, scref, ...)
+    } else if(method == "ols") {
+        assert(!is.null(scref$cached_results[["dwls"]]))
+        message("Running OLS using the DWLS signature matrix...")
+        deconv_res <- ols_deconvolute(data, scref, ...)
+    } else if(method == "svr") {
+        assert(!is.null(scref$cached_results[["dwls"]]))
+        message("Running SVR using the DWLS signature matrix...")
+        deconv_res <- svr_deconvolute(data, scref, ...)
+    } else if(method == "bayesprism") {
+        message("Running BayesPrism...")
+        deconv_res <- bayesprism_deconvolute(data, scref, cache_path = method_cache, ...)
+    } else if(method == "bisque") {
+        message("Running Bisque...")
+        deconv_res <- bisque_deconvolute(data, scref)
+    }
+    return(deconv_res)
 }
 
 # Gets -------------------
@@ -727,8 +788,8 @@ plt_spillover_heatmap <- function(scbench) {
     #-- Error handling
     assert(class(scbench) == "scbench")
     assert(!is.null(scbench$deconvolution$spillover))
-
     methods <- names(scbench$deconvolution$spillover)
+
     #-- Get deconv estimations
     all_deconv_res <- lapply(methods, function(method) {
         scbench$deconvolution$spillover[[method]]

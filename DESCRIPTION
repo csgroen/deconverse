@@ -1,11 +1,13 @@
 Package: deconverse
 Type: Package
-Title: Benchmarking of bulk deconvolution methods
-Version: 0.1.1
+Title: Benchmarking of bulk deconvolution methods from single-cell references
+Version: 0.1.3
 Author: Clarice S Groeneveld
 Maintainer: Clarice S Groeneveld <clari.groeneveld@gmail.com>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: This package implements wrappers for methods of bulk RNA-seq 
+    deconvolution using single-cell data to build cell population profiles.
+    Using pseudobulk simulations, deconverse also allows for benchmarking and 
+    comparing different deconvolution methods in a context-specific manner.
 Depends: R (> 4.0), tidyverse
 Imports: 
     Seurat,
@@ -28,7 +30,11 @@ Imports:
     e1071,
     pbmcapply,
     quadprog,
-    nnls
+    nnls,
+    purrr,
+    snow,
+    BayesPrism,
+    BisqueRNA
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

@@ -10,8 +10,9 @@ music_deconvolute(bulk_data, scref)
 \item{bulk_data}{a matrix of genes-by-samples with bulk mixtures}
 
 \item{scref}{an object of class `screference`}
-
-\item{a}{tibble with deconvolution fractions and model metrics}
+}
+\value{
+a tibble with deconvolution fractions and model metrics
 }
 \description{
 MuSiC deconvolution of bulk data using an `screference`

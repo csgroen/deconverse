@@ -74,7 +74,7 @@ new_screference <- function(
 #'
 #' @export
 compute_reference <- function(scref,
-                              method = c("cibersortx", "dwls")[1],
+                              method = deconvolution_methods()[1],
                               ...) {
     #-- Checks
     assert(class(scref) == "screference")
@@ -88,7 +88,6 @@ compute_reference <- function(scref,
         scref[["cached_results"]][[method]] <- reference_res
         return(scref)
     }
-
     #-- Compute reference
     if(method == "cibersortx") {
         message("CIBERSORTx: Building reference matrix...")
@@ -102,7 +101,12 @@ compute_reference <- function(scref,
         dwls_cache <- filePath(cache_path, "dwls")
         reference_res <- dwls_scref(scref, cache_path = dwls_cache, ...)
         saveRDS(reference_res, file = filePath(dwls_cache, "reference_res.RDS"))
-    } else if(method == "music") {
+    } else if(method == "bayesprism") {
+        message("BayesPrism: Building reference matrix...")
+        bp_cache <- filePath(cache_path, "bayesprism")
+        reference_res <- bayesprism_scref(scref, cache_path = bayesprism_cache, ...)
+        saveRDS(reference_res, file = filePath(bp_cache, "reference_res.RDS"))
+    } else {
         message("No need to compute reference beforehand. Run `deconvolute` with the `scref` object directly.")
     }
     scref[["cached_results"]][[method]] <- reference_res

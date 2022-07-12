@@ -3,7 +3,7 @@
 #' @param bulk_data a matrix of genes-by-samples with bulk mixtures
 #' @param scref an object of class `screference`
 #'
-#' @param a tibble with deconvolution fractions and model metrics
+#' @return a tibble with deconvolution fractions and model metrics
 #'
 #'
 #' @importFrom Biobase ExpressionSet exprs AnnotatedDataFrame

@@ -4,7 +4,7 @@
 \alias{compute_reference}
 \title{Compute reference given a deconvolution method from an `screference` object}
 \usage{
-compute_reference(scref, method = c("cibersortx", "dwls")[1], ...)
+compute_reference(scref, method = deconvolution_methods()[1], ...)
 }
 \arguments{
 \item{scref}{an `screference` object}

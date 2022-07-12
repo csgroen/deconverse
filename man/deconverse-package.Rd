@@ -4,8 +4,8 @@
 \name{deconverse-package}
 \alias{deconverse}
 \alias{deconverse-package}
-\title{deconverse: Benchmarking of bulk deconvolution methods}
+\title{deconverse: Benchmarking of bulk deconvolution methods from single-cell references}
 \description{
-More about what it does (maybe more than one line) Use four spaces when indenting paragraphs within the Description.
+This package implements wrappers for methods of bulk RNA-seq deconvolution using single-cell data to build cell population profiles. Using pseudobulk simulations, deconverse also allows for benchmarking and comparing different deconvolution methods in a context-specific manner.
 }
 \keyword{internal}

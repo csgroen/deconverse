@@ -2,14 +2,23 @@
 % Please edit documentation in R/scbench.R
 \name{deconvolute.scbench}
 \alias{deconvolute.scbench}
+\alias{deconvolute.matrix}
 \title{Deconvolute `scbench` object using a chosen method}
 \usage{
-deconvolute.scbench(
+\method{deconvolute}{scbench}(
   scbench,
   scref,
   method = deconvolution_methods()[1],
   type = c("population", "spillover", "lod")[1],
   pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
+  ...
+)
+
+\method{deconvolute}{matrix}(
+  bulk_data,
+  scref,
+  method = deconvolution_methods()[1],
+  bulk_norm = c("rpm", "none", "proportional_fitting")[3],
   ...
 )
 }
@@ -32,10 +41,21 @@ for using the mean library size of the pseudobulk data to normalize.}
 \item{...}{other parameters, passed to the method wrapper, enables the user
 to change the method parameters. See: `deconvolute_{method}` where `{method}`
 is the method name in lowercase for method-specific parameters}
+
+\item{bulk_data}{a count or linear-normalized (cpm, etc) matrix of genes-by-samples}
+
+\item{bulk_norm}{the normalization to be applied in the bulk data. One of:
+`"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
+for using the mean library size of the pseudobulk data to normalize. If already
+normalized, make sure to choose `"none"`.}
 }
 \value{
 an object of class `scbench`
+
+a tibble with deconvolution results
 }
 \description{
 Deconvolute `scbench` object using a chosen method
+
+Deconvolute bulk RNA-seq matrix using a chosen method
 }

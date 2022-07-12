@@ -205,7 +205,8 @@ mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
     scbench$status <- .update_status(scbench$status, "lod")
     return(scbench)
 }
-# Pseudobulk and deconvolution ------------------------
+# Pseudobulk ------------------------
+
 #' Generate pseudobulk gene expression from single-cell RNA-seq given
 #' population mixtures in an `scbench` object
 #'
@@ -273,49 +274,10 @@ pseudobulks <- function(scbench,
 
     return(scbench)
 }
+# Deconvolution ----------------------------------
 #' @export
 deconvolution_methods <- function() {
     c("ols", "dwls", "svr", "cibersortx", "music",  "bayesprism", "bisque")
-}
-
-#' Deconvolute `scbench` object using all methods with default settings
-#'
-#' @param scbench an `scbench` object already processed by `pseudobulks`
-#' @param scref an `screference` object containing references for all methods that
-#' require them
-#' @param methods a vector of strings, which methods to use. For available
-#' methods, consult `deconvolution_methods()`
-#' @param ... passed to `deconvolute` for CIBERSORTx credentials
-#'
-#' @import tidyverse
-#'
-#' @return an object of class `scbench`
-#'
-#' @export
-deconvolute_all <- function(scbench,
-                            scref,
-                            methods = deconvolution_methods(),
-                            ...){
-    #-- Error handling
-    assert(class(scbench) == "scbench")
-    assert(class(scref) == "screference")
-    assert(all(methods %in% deconvolution_methods()))
-
-    #-- Get types
-    types <- names(scbench$pseudobulk_counts)
-    #-- Run deconvolutions
-    for(type in types) {
-        message("========= Deconvoluting pseudobulks for ", type, " analysis ==========")
-        for(method in methods) {
-            if(method == "cibersortx") {
-                scbench <- deconvolute.scbench(scbench, scref, method = method, type = type, ...)
-            } else {
-                scbench <- deconvolute.scbench(scbench, scref, method = method, type = type)
-            }
-        }
-    }
-    return(scbench)
-
 }
 
 #' Deconvolute `scbench` object using a chosen method
@@ -338,6 +300,7 @@ deconvolute_all <- function(scbench,
 #'
 #' @return an object of class `scbench`
 #'
+#' @rdname deconvolute
 #' @export
 deconvolute.scbench <- function(scbench,
                         scref,
@@ -416,8 +379,9 @@ deconvolute.scbench <- function(scbench,
 #' is the method name in lowercase for method-specific parameters
 #'
 #' @import tidyverse
-#' @return an object of class `scbench`
+#' @return a tibble with deconvolution results
 #'
+#' @rdname deconvolute
 #' @export
 deconvolute.matrix <- function(bulk_data, scref,
                                method = deconvolution_methods()[1],
@@ -452,6 +416,85 @@ deconvolute.matrix <- function(bulk_data, scref,
         deconv_res <- bisque_deconvolute(data, scref)
     }
     return(deconv_res)
+}
+
+#' Deconvolute `scbench` object using all methods with default settings
+#'
+#' @param scbench an `scbench` object already processed by `pseudobulks`
+#' @param scref an `screference` object containing references for all methods that
+#' require them
+#' @param methods a vector of strings, which methods to use. For available
+#' methods, consult `deconvolution_methods()`
+#' @param ... passed to `deconvolute` for CIBERSORTx credentials
+#'
+#' @import tidyverse
+#'
+#' @return an object of class `scbench`
+#' @rdname deconvolute_all
+#'
+#' @export
+deconvolute_all.scbench <- function(scbench,
+                                    scref,
+                                    methods = deconvolution_methods(),
+                                    ...){
+    #-- Error handling
+    assert(class(scbench) == "scbench")
+    assert(class(scref) == "screference")
+    assert(all(methods %in% deconvolution_methods()))
+
+    #-- Get types
+    types <- names(scbench$pseudobulk_counts)
+    #-- Run deconvolutions
+    for(type in types) {
+        message("========= Deconvoluting pseudobulks for ", type, " analysis ==========")
+        for(method in methods) {
+            if(method == "cibersortx") {
+                scbench <- deconvolute(scbench, scref, method = method, type = type, ...)
+            } else {
+                scbench <- deconvolute(scbench, scref, method = method, type = type)
+            }
+        }
+    }
+    return(scbench)
+
+}
+
+#' Deconvolute bulk RNA-seq matrix using all methods with default settings
+#'
+#' @param bulk_data a count matrix of genes-by-samples
+#' @param scref an `screference` object containing references for all methods that
+#' require them
+#' @param methods a vector of strings, which methods to use. For available
+#' methods, consult `deconvolution_methods()`
+#' @param ... passed to `deconvolute` for CIBERSORTx credentials
+#'
+#' @import tidyverse
+#'
+#' @return a list with each method's deconvolution results
+#' @rdname deconvolute_all
+#'
+#' @export
+deconvolute_all.matrix <- function(bulk_data,
+                                   scref,
+                                   methods = deconvolution_methods(),
+                                   ...){
+    #-- Error handling
+    assert(class(scref) == "screference")
+    assert(all(methods %in% deconvolution_methods()))
+
+    #-- Get types
+    types <- names(scbench$pseudobulk_counts)
+    #-- Run deconvolutions
+    all_deconv_res <- list()
+    for(method in methods) {
+        if(method == "cibersortx") {
+            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method, type = type, ...)
+        } else {
+            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method, type = type)
+        }
+    }
+    return(all_deconv_res)
+
 }
 
 # Gets -------------------
@@ -734,7 +777,7 @@ plt_spillover_scatter <- function(scbench, method) {
         scale_x_continuous(breaks = c(0, 0.5, 1)) +
         scale_y_continuous(breaks = c(0, 0.5, 1)) +
         stat_cor(size = 3, method = "pearson") +
-        labs(x = paste0("Fraction predicted by ", unique(deconv_res$method)), y = "True fraction") +
+        labs(x = paste0("Row population fraction predicted by ", unique(deconv_res$method)), y = "True row population fraction") +
         guides(color = 'none') +
         theme_scatter()
     plt <- .remove_lowerti(plt, length(levels(plot_tb$pop1)), length(levels(plot_tb$pop2)))
@@ -911,7 +954,17 @@ plt_lod_heatmap <- function(scbench) {
     return(list(heatmap = lod_hm, lod_table = lods))
 }
 
-# Helpers ----
+# Generics ------------------
+#' @export
+deconvolute <- function(x, ...) {
+    UseMethod("deconvolute")
+}
+#' @export
+deconvolute_all <- function(x, ...) {
+    UseMethod("deconvolute_all")
+}
+
+# Helpers ------------
 #' @importFrom R.utils filePath
 .scbench_cache_check <- function(method_cache) {
     method_fname <- filePath(method_cache, "deconv_res.RDS")

@@ -22,7 +22,7 @@
 #'
 #' @import tidyverse
 #' @importFrom BayesPrism cleanup.genes select.gene.type get.exp.stat select.marker
-#' @importFrom snow setDefaultClusterOptions
+#' @import snowfall
 #' @export
 bayesprism_scref <- function(scref,
                              cache_path = "bayes_prism",

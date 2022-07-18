@@ -5,7 +5,7 @@
 
 [![](https://img.shields.io/badge/devel%20version-0.1.3-blue.svg)](https://github.com/csgroen/deconverse)
 [![](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![](https://coveralls.io/repos/github/google/benchmark/badge.svg?branch=master)](https://coveralls.io/github/google/benchmark)
+[![](https://app.codecov.io/gh/google/benchmark/branch/master/graph/badge.svg)](https://app.codecov.io/gh/google/benchmark)
 [![](https://img.shields.io/github/last-commit/csgroen/deconverse.svg)](https://github.com/csgroen/deconverse/commits/master)
 
 **Note**: This package is still very immature, APIs are not yet well

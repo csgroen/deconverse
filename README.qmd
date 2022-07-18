@@ -1,0 +1,41 @@
+---
+format: gfm
+---
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+## `deconverse`: bulk RNA-seq deconvolution benchmark using single-cell reference profiles <img src="man/figures/logo.png" align="right" width="120"/>
+
+```{r, echo = FALSE, results='asis', message=FALSE, warning=FALSE}
+require(badger)
+cat(
+	badge_devel("csgroen/deconverse", "blue"),
+	badge_lifecycle("experimental"),
+	badge_coveralls("google/benchmark"),
+	badge_last_commit("csgroen/deconverse")
+)
+```
+
+**Note**: This package is still very immature, APIs are not yet well documented and may change
+
+### Installation
+
+To install, run:
+
+```{r eval=FALSE}
+remotes::install_github("csgroen/ggheatmapper")
+remotes::install_github("jamesotto852/ggdensity")
+remotes::install_github("csgroen/deconverse")
+```
+
+`docker` or `singularity` must be available to run some deconvolution methods. To install, see: <https://docs.docker.com/get-docker/>
+
+To install CIBERSORTx docker, run:
+
+```{r eval=FALSE}
+library(deconverse)
+install_cibersortx()
+```
+
+### Usage
+
+[Usage example (v1)](https://drive.google.com/file/d/1ahly_DeekNbGTL9zO8vUgP-FvnMvJEnF/view?usp=sharing)

@@ -35,16 +35,21 @@ new_scbench <- function(ref_scrna,
         }
     }
     assert(all(annot_ids %in% colnames(ref_scrna@meta.data)))
+    if(is.null(names(annot_ids))) {
+        names(annot_ids) <- paste0("l", 1:nl)
+    }
     colnames(ref_scrna@meta.data) <- plyr::mapvalues(colnames(ref_scrna@meta.data), annot_ids, names(annot_ids))
     if(!is.null(batch_id)) {
         assert(batch_id %in% colnames(ref_scrna@meta.data))
         colnames(ref_scrna@meta.data)[colnames(ref_scrna@meta.data) == batch_id] <- "batch_id"
     }
+    pop_hierarchy <- .pop_hierarchy(pop_bounds)
 
     #-- Create object
     scbench <- list(ref_data = ref_scrna,
                     project_name = project_name,
                     pop_bounds = pop_bounds,
+                    pop_hierarchy = pop_hierarchy,
                     nlevels = nl,
                     cache = cache_path,
                     ref_samps = NULL,
@@ -72,7 +77,7 @@ new_scbench <- function(ref_scrna,
 #' @return an object of class `scbench`
 #'
 #' @export
-mixtures_population <- function(scbench, nsamps = 1000, seed = NULL) {
+mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
     message("Simulating population mixtures given bounds...")
     assert(class(scbench) == "scbench")
     bounds <- scbench$pop_bounds
@@ -166,10 +171,14 @@ mixtures_spillover <- function(scbench, step = 0.05) {
 #' tested
 #' @param step the step between 0 and `max_prop` in a sequence to be tested as
 #' limit of detection
+#' @param nsamp_per_step number of samples per step, used for statistics of the
+#' results for the calibration curves
+#' @param prop_noise_sd a value for added noise to the different samples generated
+#' for each observation
 #'
 #' @return an object of class `scbench`
 #' @export
-mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
+mixtures_lod <- function(scbench, max_prop = 0.2, step = 0.01) {
     message("Simulating limits of detection for each population...")
     #-- Checks
     assert(class(scbench) == "scbench")
@@ -179,17 +188,25 @@ mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
     #-- Get step
     pop_props <- scbench[["mixtures"]][["population"]]
     prop_steps <- seq(0, max_prop, by = step)
+    nblanks <- 5
+    blank_noise_sd <- 0.01
     #-- Get LoD mixtures
     lod_props <- lapply(pop_props, function(l_pop_props) {
         mean_prop <- colMeans(l_pop_props)
-        ref_props <- mean_prop/sum(mean_prop)
-
         pops <- colnames(l_pop_props)
-        lapply(pops, function(pop) {
+        pop_refs <- mean_prop/sum(mean_prop)
+        blank_refs <- lapply(1:(nblanks-1), function(i) {
+            new_refs <- pop_refs + rnorm(length(pops), 0, blank_noise_sd)
+            new_refs[new_refs < 0] <- 0
+            new_refs/sum(new_refs)
+            new_refs[new_refs < 0] <- 0
+            return(new_refs)
+            })
+        pop_res <- lapply(pops, function(pop) {
             sapply(prop_steps, function(prop) {
                 reduced_pops <- setdiff(pops, pop)
-                step_props <- ref_props
-                step_props[reduced_pops] <- step_props[reduced_pops] + (ref_props[pop]-prop)/length(reduced_pops)
+                step_props <- pop_refs
+                step_props[reduced_pops] <- step_props[reduced_pops] + (pop_refs[pop]-prop)/length(reduced_pops)
                 step_props[pop] <- prop
                 return(step_props)
             }) %>%
@@ -200,7 +217,26 @@ mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
                 relocate(population)
         }) %>%
             bind_rows()
-    } )
+
+        extra_blanks <- lapply(pops, function(pop) {
+            sapply(blank_refs, function(blank_ref) {
+                blank_ref[pop] <- 0
+                extra_blank <- blank_ref/sum(blank_ref)
+                return(extra_blank)
+            }) %>%
+                t() %>%
+                as.data.frame() %>%
+                tibble() %>%
+                mutate(population = pop) %>%
+                relocate(population)
+        }) %>%
+            bind_rows()
+
+        lod_mixes <- bind_rows(pop_res, extra_blanks) %>%
+            mutate(sample = paste0("s", 1:n())) %>%
+            relocate(sample)
+        return(lod_mixes)
+    })
     scbench[["mixtures"]][["lod"]] <- lod_props
     scbench$status <- .update_status(scbench$status, "lod")
     return(scbench)
@@ -228,20 +264,18 @@ mixtures_lod <- function(scbench, max_prop = 0.1, step = 0.005) {
 #'
 #' @export
 pseudobulks <- function(scbench,
-                        level = NULL,
                         ncells = 2000,
                         ncores = 8,
                         shrink_obj = TRUE,
                         by_batch = FALSE,
-                        seed = NULL) {
+                        seed = 0) {
     assert(class(scbench) == "scbench")
     assert("mixtures" %in% names(scbench))
     assert(!scbench$shrunk)
 
-    #-- Get level
-    if(is.null(level)) {
-        level <- names(scbench[["mixtures"]][["population"]])[length(pop_props)]
-    }
+    #-- Get level (finest grained)
+    levels <- names(scbench[["mixtures"]][["population"]])
+    level <- levels[length(levels)]
 
     #-- Pseudobulks to generate
     types <- names(scbench[["mixtures"]])
@@ -252,17 +286,42 @@ pseudobulks <- function(scbench,
         } else {
             ncells_run <- ncells
         }
-        pb_res <- .get_pseudobulk(scbench, type,
-                                  level = level, seed = seed,
-                                  ncores = ncores, ncells = ncells_run,
-                                  by_batch = by_batch)
         if(type == "population") {
+            pb_res <- .get_pseudobulk(scbench, type,
+                                      level = level, seed = seed,
+                                      ncores = ncores, ncells = ncells_run,
+                                      by_batch = by_batch)
             scbench[["mixtures"]][[type]][[level]] <- pb_res$props
-        }
-        scbench[["pseudobulk_counts"]][[type]] <- pb_res$pseudobulk
-        rm(pb_res)
-        gc()
 
+            if(level != "l1") {
+                scbench$pop_hierarchy
+                finer_lvl <- str_remove(level, "l") %>% as.numeric()
+                for(i in (finer_lvl-1):1) {
+                    coarser_lvl <- paste0("l", i)
+                    joins <- split(scbench$pop_hierarchy[[finer_lvl]], scbench$pop_hierarchy[[coarser_lvl]])
+                    props_coarser <- sapply(joins, function(pops2join) {
+                        rowSums(as.matrix(pb_res$props[,pops2join]))
+                    })
+                    rownames(props_coarser) <- rownames(pb_res$props)
+                    scbench[["mixtures"]][[type]][[coarser_lvl]] <- props_coarser
+                }
+                scbench[["pseudobulk_counts"]][["population"]] <- pb_res$pseudobulk
+                rm(pb_res)
+            }
+        } else {
+            multi_pb_res <- lapply(levels, function(level) {
+                .get_pseudobulk(scbench, type,
+                                level = level, seed = seed,
+                                ncores = ncores, ncells = ncells_run,
+                                by_batch = by_batch)
+            })
+            pbs <- lapply(multi_pb_res, "[[", "pseudobulk")
+            names(pbs) <- levels
+            scbench[["pseudobulk_counts"]][[type]] <- pbs
+            rm(multi_pb_res)
+
+        }
+    gc()
     }
     if(shrink_obj) {
         scbench$ref_data <- scbench$ref_data@meta.data
@@ -270,14 +329,15 @@ pseudobulks <- function(scbench,
     }
     scbench$shrunk <- shrink_obj
     scbench$status <- .update_status(scbench$status, "pseudobulks")
-    scbench$level <- level
 
     return(scbench)
 }
+
+
 # Deconvolution ----------------------------------
 #' @export
 deconvolution_methods <- function() {
-    c("ols", "dwls", "svr", "cibersortx", "music",  "bayesprism", "bisque")
+    c("ols", "dwls", "svr", "cibersortx", "music",  "bayesprism", "bisque", "autogenes")
 }
 
 #' Deconvolute `scbench` object using a chosen method
@@ -309,57 +369,111 @@ deconvolute.scbench <- function(scbench,
                         pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
                         ...) {
     #-- Error handling
-    assert(class(scbench) == "scbench")
-    assert(class(scref) == "screference")
+    # assert(class(scbench) == "scbench")
+    assert(class(scref) %in% c("screference", "hscreference"))
     assert(!is.null(scbench$pseudobulk_counts[[type]]))
 
-    #-- Cache handling
-    method_cache <- filePath(scbench$cache, scbench$project_name, scbench$level, method, type)
-    deconv_res <- .scbench_cache_check(method_cache)
-    if(!is.null(deconv_res)) {
-        message("Found cached results. Returning...")
-        scbench[["deconvolution"]][[type]][[method]] <- deconv_res
-        return(scbench)
+    #-- Reference picking
+    if(class(scref) == "hscreference") {
+        #-- Error handling
+        assert(scref$nlevels == scbench$nlevels)
+        levels <- paste0("l", 1:scbench$nlevels)
+        same_populations <- sapply(1:scref$nlevels, function(lv) {
+            all(unique(scref$hpop_table[[lv]]) %in% unique(scbench$pop_hierarchy[[lv]]))
+        })
+        if(!all(same_populations)) {
+            stop("Populations in `scref` and `scbench` are not the same at all levels.")
+        }
+    } else {
+        if(scbench$nlevels > 1) {
+            match <- sapply(1:scbench$nlevels, function(i) {
+                all(scbench$pop_hierarchy[[i]] %in% scref$populations)
+            }) %>% which()
+            level_match <- paste0("l", match[length(match)])
+
+            message(str_glue("`scref` contains reference for {level_match}."))
+            levels <- level_match
+        } else {
+            levels <- "l1"
+        }
     }
-    #-- Get pseudocounts and make linear transformation
-    pb <- scbench$pseudobulk_counts[[type]]
-    if(pseudobulk_norm == "rpm") {
-        data <- librarySizeNormalization(pb, 10^6)
-    } else if (pseudobulk_norm == "proportional_fitting") {
-        data <- librarySizeNormalization(pb, mean(colSums(pb)))
+    for(level in levels) {
+        if(class(scref) == "hscreference") {
+            ref <- scref$screfs[[level]]
+        } else {
+            ref <- scref
+        }
+        message("Deconvoluting ", level, " populations in ", type, " analysis...")
+        #-- Cache handling
+        method_cache <- filePath(scbench$cache, scbench$project_name, level, type, method)
+        deconv_res <- .scbench_cache_check(method_cache)
+        if(!is.null(deconv_res)) {
+            message("Found cached results. Returning...")
+            scbench[["deconvolution"]][[level]][[type]][[method]] <- deconv_res
+        } else {
+            #-- Get pseudocounts and make linear transformation
+            if(type == "population") {
+                pb <- scbench$pseudobulk_counts[[type]]
+            } else {
+                pb <- scbench$pseudobulk_counts[[type]][[level]]
+            }
+            if(pseudobulk_norm == "rpm") {
+                data <- librarySizeNormalization(pb, 10^6)
+            } else if (pseudobulk_norm == "proportional_fitting") {
+                data <- librarySizeNormalization(pb, mean(colSums(pb)))
+            }
+            #-- Compute
+            if(method == "cibersortx") {
+                message("Running CIBERSORTx...")
+                assert(!is.null(ref$cached_results[["cibersortx"]]))
+                deconv_res <- cibersortx_deconvolute(data, ref, cache_path = method_cache, ...)
+            } else if (method == "music") {
+                message("Running MuSiC...")
+                deconv_res <- music_deconvolute(data, ref, ...)
+            } else if (method == "dwls") {
+                message("Running DWLS...")
+                assert(!is.null(ref$cached_results[["dwls"]]))
+                deconv_res <- dwls_deconvolute(data, ref, ...)
+            } else if(method == "ols") {
+                assert(!is.null(ref$cached_results[["dwls"]]))
+                message("Running OLS using the DWLS signature matrix...")
+                deconv_res <- ols_deconvolute(data, ref, ...)
+            } else if(method == "svr") {
+                assert(!is.null(ref$cached_results[["dwls"]]))
+                message("Running SVR using the DWLS signature matrix...")
+                deconv_res <- svr_deconvolute(data, ref, ...)
+            } else if(method == "bayesprism") {
+                message("Running BayesPrism...")
+                deconv_res <- bayesprism_deconvolute(data, ref, cache_path = method_cache, ...)
+            } else if(method == "bisque") {
+                message("Running Bisque...")
+                deconv_res <- bisque_deconvolute(data, ref)
+            } else if(method == "autogenes") {
+                message("Running AutoGeneS...")
+                deconv_res <- autogenes_deconvolute(data, ref, ...)
+            }
+            #-- Save to cache
+            saveRDS(deconv_res, file = filePath(method_cache, "deconv_res.RDS"))
+            #-- Return
+            scbench[["deconvolution"]][[level]][[type]][[method]] <- deconv_res
+        }
     }
-    #-- Compute
-    if(method == "cibersortx") {
-        message("Running CIBERSORTx...")
-        assert(!is.null(scref$cached_results[["cibersortx"]]))
-        deconv_res <- cibersortx_deconvolute(data, scref, cache_path = method_cache, ...)
-    } else if (method == "music") {
-        message("Running MuSiC...")
-        deconv_res <- music_deconvolute(data, scref, ...)
-    } else if (method == "dwls") {
-        message("Running DWLS...")
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        deconv_res <- dwls_deconvolute(data, scref, ...)
-    } else if(method == "ols") {
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        message("Running OLS using the DWLS signature matrix...")
-        deconv_res <- ols_deconvolute(data, scref, ...)
-    } else if(method == "svr") {
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        message("Running SVR using the DWLS signature matrix...")
-        deconv_res <- svr_deconvolute(data, scref, ...)
-    } else if(method == "bayesprism") {
-        message("Running BayesPrism...")
-        deconv_res <- bayesprism_deconvolute(data, scref, cache_path = method_cache, ...)
-    } else if(method == "bisque") {
-        message("Running Bisque...")
-        deconv_res <- bisque_deconvolute(data, scref)
+    if(length(levels) > 1 & type == "population") {
+        for(i in 2:length(levels)) {
+            finer <- paste0("l", i); coarser <- paste0("l", i-1)
+            finer_deconv <- scbench[["deconvolution"]][[finer]][["population"]][[method]]
+            coarser_deconv <- scbench[["deconvolution"]][[coarser]][["population"]][[method]]
+            pop_hierarchy <- scbench$pop_hierarchy
+            hierarchy_list <- pop_hierarchy %>% pull(!! finer, !! coarser) %>% split(., names(.))
+
+            finer_deconv_norm <- .normalize_deconvolution_by_hierarchy(
+                hierarchy_list, finer_deconv, coarser_deconv)
+
+            scbench[["deconvolution"]][[finer]][[type]][[method]] <- finer_deconv_norm
+        }
+
     }
 
-    #-- Save to cache
-    saveRDS(deconv_res, file = filePath(method_cache, "deconv_res.RDS"))
-    #-- Return
-    scbench[["deconvolution"]][[type]][[method]] <- deconv_res
     return(scbench)
 }
 
@@ -387,35 +501,68 @@ deconvolute.matrix <- function(bulk_data, scref,
                                method = deconvolution_methods()[1],
                                bulk_norm = c("rpm", "none", "proportional_fitting")[3],
                                ...) {
-    assert(class(scref) == "screference")
-    #-- Compute
-    if(method == "cibersortx") {
-        message("Running CIBERSORTx...")
-        assert(!is.null(scref$cached_results[["cibersortx"]]))
-        deconv_res <- cibersortx_deconvolute(data, scref, cache_path = method_cache, ...)
-    } else if (method == "music") {
-        message("Running MuSiC...")
-        deconv_res <- music_deconvolute(data, scref, ...)
-    } else if (method == "dwls") {
-        message("Running DWLS...")
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        deconv_res <- dwls_deconvolute(data, scref, ...)
-    } else if(method == "ols") {
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        message("Running OLS using the DWLS signature matrix...")
-        deconv_res <- ols_deconvolute(data, scref, ...)
-    } else if(method == "svr") {
-        assert(!is.null(scref$cached_results[["dwls"]]))
-        message("Running SVR using the DWLS signature matrix...")
-        deconv_res <- svr_deconvolute(data, scref, ...)
-    } else if(method == "bayesprism") {
-        message("Running BayesPrism...")
-        deconv_res <- bayesprism_deconvolute(data, scref, cache_path = method_cache, ...)
-    } else if(method == "bisque") {
-        message("Running Bisque...")
-        deconv_res <- bisque_deconvolute(data, scref)
+    assert(class(scref) %in% c("screference", "hscreference"))
+
+    if(class(scref) == "hscreference") {
+        levels <- paste0("l", 1:scref$nlevels)
+    } else {
+        levels <- "l1"
     }
-    return(deconv_res)
+    all_results <- list()
+    for (level in levels) {
+        if(class(scref) == "hscreference") {
+            ref <- scref$screfs[[level]]
+        } else {
+            ref <- scref
+        }
+        #-- Compute
+        if(method == "cibersortx") {
+            message("Running CIBERSORTx...")
+            assert(!is.null(ref$cached_results[["cibersortx"]]))
+            deconv_res <- cibersortx_deconvolute(data, scref, cache_path = cache_path, ...)
+        } else if (method == "music") {
+            message("Running MuSiC...")
+            deconv_res <- music_deconvolute(data, ref, ...)
+        } else if (method == "dwls") {
+            message("Running DWLS...")
+            assert(!is.null(scref$cached_results[["dwls"]]))
+            deconv_res <- dwls_deconvolute(data, ref, ...)
+        } else if(method == "ols") {
+            assert(!is.null(scref$cached_results[["dwls"]]))
+            message("Running OLS using the DWLS signature matrix...")
+            deconv_res <- ols_deconvolute(data, ref, ...)
+        } else if(method == "svr") {
+            assert(!is.null(scref$cached_results[["dwls"]]))
+            message("Running SVR using the DWLS signature matrix...")
+            deconv_res <- svr_deconvolute(data, ref, ...)
+        } else if(method == "bayesprism") {
+            message("Running BayesPrism...")
+            deconv_res <- bayesprism_deconvolute(data, ref, cache_path = cache_path, ...)
+        } else if(method == "bisque") {
+            message("Running Bisque...")
+            deconv_res <- bisque_deconvolute(data, ref)
+        } else if(method == "autogenes") {
+            message("Running AutoGeneS...")
+            deconv_res <- autogenes_deconvolute(data, ref, ...)
+        }
+        all_results[[level]] <- deconv_res
+    }
+    if(length(all_results) == 1) {
+        return(unlist(all_results))
+    } else {
+        for(i in 2:length(levels)) {
+            finer <- paste0("l", i); coarser <- paste0("l", i-1)
+            finer_deconv <- all_results[[finer]]
+            coarser_deconv <- all_results[[coarser]]
+            pop_hierarchy <- scref$hpop_table
+            hierarchy_list <- pop_hierarchy %>% pull(!! finer, !! coarser) %>% split(., names(.))
+            finer_deconv_norm <- .normalize_deconvolution_by_hierarchy(
+                hierarchy_list, finer_deconv, coarser_deconv)
+
+            all_results[[finer]] <- finer_deconv_norm
+        }
+        return(all_results)
+    }
 }
 
 #' Deconvolute `scbench` object using all methods with default settings
@@ -439,7 +586,7 @@ deconvolute_all.scbench <- function(scbench,
                                     ...){
     #-- Error handling
     assert(class(scbench) == "scbench")
-    assert(class(scref) == "screference")
+    assert(class(scref) %in% c("screference", "hscreference"))
     assert(all(methods %in% deconvolution_methods()))
 
     #-- Get types
@@ -513,7 +660,7 @@ deconvolute_all.matrix <- function(bulk_data,
 #' @param a `tibble` with results.
 #'
 #' @export
-get_benchmark_results <- function(scbench, methods = NULL, type = "population") {
+get_benchmark_results <- function(scbench, methods = NULL, level = NULL, type = "population") {
     assert(class(scbench) == "scbench")
     assert(!is.null(scbench[["mixtures"]]))
     assert(!is.null(scbench[["deconvolution"]]))
@@ -521,19 +668,20 @@ get_benchmark_results <- function(scbench, methods = NULL, type = "population") 
     if(is.null(methods)) {
         methods <- names(scbench[["deconvolution"]][[type]])
     }
+    level <- .get_level(level, scbench)
 
     if(type == "population") {
         results <- lapply(methods, function(method) {
-            deconv_res <- scbench$deconvolution[["population"]][[method]]
-            bench_tb <- .get_benchmark_fractions(scbench, deconv_res)
+            deconv_res <- scbench$deconvolution[[level]][["population"]][[method]]
+            bench_tb <- .get_benchmark_fractions(scbench, deconv_res, level)
             results <- .get_bench_results(deconv_res, bench_tb) %>%
                 mutate(method = method)
         }) %>%
             bind_rows()
     } else if(type == "spillover") {
         results <- lapply(methods, function(method) {
-            deconv_res <- scbench$deconvolution[["spillover"]][[method]]
-            spillover_tb <- .get_spillover_mixtures(scbench, deconv_res)
+            deconv_res <- scbench$deconvolution[[level]][["spillover"]][[method]]
+            spillover_tb <- .get_spillover_mixtures(scbench, deconv_res, level)
             results <- .get_spillover_results(deconv_res, spillover_tb) %>%
                 mutate(mixture = paste0(pop1, "|", pop2),
                        method = method) %>%
@@ -542,8 +690,8 @@ get_benchmark_results <- function(scbench, methods = NULL, type = "population") 
             bind_rows()
     } else if(type == "lod") {
         results <- lapply(methods, function(method) {
-            deconv_res <- scbench$deconvolution[["lod"]][[method]]
-            lod_tb <- .get_lod_mixtures(scbench, deconv_res)
+            deconv_res <- scbench$deconvolution[[level]][["lod"]][[method]]
+            lod_tb <- .get_lod_mixtures(scbench, deconv_res, level)
             results <- .get_lod_results(deconv_res, lod_tb)
             results <- results$lod_tb %>%
                 select(sample, population, truth, pred = est, method) %>%
@@ -608,6 +756,8 @@ plt_population_mixtures <- function(scbench, nshow = 50, order_by = NULL) {
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #' @param method a string, one of `deconvolution_methods()`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @import tidyverse
 #' @importFrom ggpubr stat_cor
@@ -617,14 +767,17 @@ plt_population_mixtures <- function(scbench, nshow = 50, order_by = NULL) {
 #' @return a ggplot object
 #'
 #' @export
-plt_cors_scatter <- function(scbench, method) {
+plt_cors_scatter <- function(scbench, method, level = NULL) {
     assert(class(scbench) == "scbench")
-    assert(!is.null(scbench$deconvolution$population[[method]]))
+    level <- .get_level(level, scbench)
+
+    assert(!is.null(scbench$deconvolution[[level]]$population[[method]]))
+
     #-- Get deconv results
-    deconv_res <- scbench$deconvolution[["population"]][[method]]
+    deconv_res <- scbench$deconvolution[[level]][["population"]][[method]]
 
     #-- Get benchmark fractions
-    bench_tb <- .get_benchmark_fractions(scbench, deconv_res)
+    bench_tb <- .get_benchmark_fractions(scbench, deconv_res, level)
 
     #-- Join data
     plot_tb <-.get_bench_results(deconv_res, bench_tb)
@@ -648,6 +801,8 @@ plt_cors_scatter <- function(scbench, method) {
 #' populations and true mixtures used for the pseudobulks
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `cor_table`, a
 #' table summarizing results
@@ -655,13 +810,14 @@ plt_cors_scatter <- function(scbench, method) {
 #' @importFrom ggheatmapper get_hmPlot update_hmPlot
 #'
 #' @export
-plt_cor_heatmap <- function(scbench) {
-    plot_tb <- .aggregate_deconvolution_results(scbench) %>%
+plt_cor_heatmap <- function(scbench, level = NULL) {
+    level <- .get_level(level, scbench)
+    plot_tb <- .aggregate_deconvolution_results(scbench, level) %>%
         group_by(method, population) %>%
-        summarize(pop_cors = cor(pred, truth)) %>%
+        summarize(pop_cors = cor(pred, truth, use = "pair")) %>%
         pivot_wider(names_from = method, values_from = pop_cors)
 
-    mean_cors <- colMeans(plot_tb[,2:ncol(plot_tb)])
+    mean_cors <- colMeans(plot_tb[,2:ncol(plot_tb)], na.rm = TRUE)
     methods <- names(mean_cors)[order(mean_cors)]
 
     plt <- ggheatmap(plot_tb,
@@ -692,6 +848,8 @@ plt_cor_heatmap <- function(scbench) {
 #' true mixtures used for the pseudobulks
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
@@ -699,9 +857,10 @@ plt_cor_heatmap <- function(scbench) {
 #' @importFrom ggheatmapper ggheatmap align_to_hm theme_sparse2
 #' @importFrom yardstick rmse_vec
 #' @export
-plt_rmse_heatmap <- function(scbench) {
+plt_rmse_heatmap <- function(scbench, level = NULL) {
+    level <- .get_level(level, scbench)
     #-- Get plot data
-    rmse_tb <- .aggregate_deconvolution_results(scbench) %>%
+    rmse_tb <- .aggregate_deconvolution_results(scbench, level) %>%
         group_by(method, population) %>%
         summarize(RMSE = yardstick::rmse_vec(truth, pred))
     plot_tb <- pivot_wider(rmse_tb, names_from = method, values_from = RMSE)
@@ -714,7 +873,6 @@ plt_rmse_heatmap <- function(scbench) {
                metric = "RMSE",
                lev = ifelse(RMSE < max(RMSE)/2, "low", "high")) %>%
         arrange(method)
-
 
     #-- RMSE by population heatmap
     gghm <- ggheatmap(plot_tb,
@@ -748,6 +906,8 @@ plt_rmse_heatmap <- function(scbench) {
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #' @param method a string, one of `deconvolution_methods()`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @import tidyverse
 #' @importFrom ggpubr stat_cor
@@ -755,14 +915,17 @@ plt_rmse_heatmap <- function(scbench) {
 #' @return a ggplot object
 #'
 #' @export
-plt_spillover_scatter <- function(scbench, method) {
+plt_spillover_scatter <- function(scbench, method, level = NULL) {
+    level <- .get_level(level, scbench)
+
     assert(class(scbench) == "scbench")
-    assert(!is.null(scbench$deconvolution$spillover[[method]]))
+    assert(!is.null(scbench$deconvolution[[level]]$spillover[[method]]))
+
 
     #-- Get deconv estimations
-    deconv_res <- scbench$deconvolution$spillover[[method]]
+    deconv_res <- scbench$deconvolution[[level]]$spillover[[method]]
     #-- Get mixtures
-    spillover_tb <- .get_spillover_mixtures(scbench, deconv_res)
+    spillover_tb <- .get_spillover_mixtures(scbench, deconv_res, level)
 
     #-- Get estimations and join
     plot_tb <- .get_spillover_results(deconv_res, spillover_tb)
@@ -777,7 +940,7 @@ plt_spillover_scatter <- function(scbench, method) {
         scale_x_continuous(breaks = c(0, 0.5, 1)) +
         scale_y_continuous(breaks = c(0, 0.5, 1)) +
         stat_cor(size = 3, method = "pearson") +
-        labs(x = paste0("Row population fraction predicted by ", unique(deconv_res$method)), y = "True row population fraction") +
+        labs(x = paste0("Population fraction predicted by ", unique(deconv_res$method)), y = "True population fraction") +
         guides(color = 'none') +
         theme_scatter()
     plt <- .remove_lowerti(plt, length(levels(plot_tb$pop1)), length(levels(plot_tb$pop2)))
@@ -790,6 +953,8 @@ plt_spillover_scatter <- function(scbench, method) {
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
 #' @param method a string, one of `deconvolution_methods()`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @import tidyverse
 #' @importFrom ggpubr stat_cor
@@ -797,49 +962,61 @@ plt_spillover_scatter <- function(scbench, method) {
 #' @return a ggplot object
 #'
 #' @export
-plt_lod_scatter <- function(scbench, method) {
+plt_lod_scatter <- function(scbench, method, level = NULL) {
     #-- Limit of detection
-    deconv_res <- scbench$deconvolution$lod[[method]]
-    level <- .match_level(scbench, deconv_res, "lod")
+    level <- .get_level(level, scbench)
+    deconv_res <- scbench$deconvolution[[level]]$lod[[method]]
 
     #-- Get mixtures
-    bench_tb <- .get_lod_mixtures(scbench, deconv_res)
+    bench_tb <- .get_lod_mixtures(scbench, deconv_res, level)
     lod_res <- .get_lod_results(deconv_res, bench_tb)
+    step <- lod_res$lod_tb$truth[2] - lod_res$lod_tb$truth[1]
+    blanks <- lod_res$lod_tb %>%
+        filter(truth == 0)
 
-    plt <- ggplot(lod_res$lod_tb, aes(est, truth)) +
+   plt <-
+        ggplot(lod_res$lod_tb, aes(est, truth)) +
         facet_wrap(~ population) +
         geom_point(color = "steelblue") +
+        geom_violin(aes(x = est), data = blanks, width = step, alpha = 0) +
+        geom_segment(aes(x = blank_mean, xend = blank_mean, y = -step, yend = step),
+                     data = lod_res$blank_metrics) +
         geom_abline(slope = 1, intercept = 0, color = "black", lty = "dashed", size = 0.5) +
         labs(x = paste0("Fraction predicted by ", unique(deconv_res$method)), y = "True fraction") +
         guides(color = 'none') +
         geom_hline(aes(yintercept = truth), data = lod_res$lod_annot, lty = "dotted") +
         geom_text(aes(x = 0.1, label = label), data = lod_res$lod_annot, size = 3, vjust = -0.3, hjust = 0.5) +
         theme_scatter()
+
     return(plt)
 }
 
 #' Plot heatmap summarizing spillover RMSE by population and method
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
 #'
 #' @importFrom data.table rbindlist
 #' @export
-plt_spillover_heatmap <- function(scbench) {
+plt_spillover_heatmap <- function(scbench, level = NULL) {
+    level <- .get_level(level, scbench)
+
     #-- Error handling
     assert(class(scbench) == "scbench")
-    assert(!is.null(scbench$deconvolution$spillover))
-    methods <- names(scbench$deconvolution$spillover)
+    assert(!is.null(scbench$deconvolution[[level]]$spillover))
+    methods <- names(scbench$deconvolution[[level]]$spillover)
 
     #-- Get deconv estimations
     all_deconv_res <- lapply(methods, function(method) {
-        scbench$deconvolution$spillover[[method]]
+        scbench$deconvolution[[level]]$spillover[[method]]
     })
-    level <- .match_level(scbench, all_deconv_res[[1]], "spillover")
+    # level <- .match_level(scbench, all_deconv_res[[1]], "spillover")
     #-- Get mixtures
-    spillover_tb <- .get_spillover_mixtures(scbench, all_deconv_res[[1]])
+    spillover_tb <- .get_spillover_mixtures(scbench, all_deconv_res[[1]], level)
 
     #-- Get estimations and join
     all_res <- lapply(all_deconv_res, .get_spillover_results, spillover_tb)
@@ -893,23 +1070,29 @@ plt_spillover_heatmap <- function(scbench) {
 #' Plot heatmap summarizing limit of detection by population and method
 #' @param scbench an `scbench` object that has been evaluated by
 #' `deconvolute`
+#' @param level an annotation level to show. Finest-grained annotation (highest level)
+#' by default.
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `lod_table`, a
 #' table summarizing results
 #'
 #' @export
-plt_lod_heatmap <- function(scbench) {
+plt_lod_heatmap <- function(scbench, level = NULL) {
     #-- Error handling
+    level <- .get_level(level, scbench)
     assert(class(scbench) == "scbench")
-    assert(!is.null(scbench$deconvolution$lod))
-    methods <- names(scbench$deconvolution$lod)
+    assert(!is.null(scbench$deconvolution[[level]]$lod))
+    methods <- names(scbench$deconvolution[[level]]$lod)
 
     #-- Setup
-    all_deconv_res <- lapply(methods, function(method) { scbench$deconvolution$lod[[method]]})
-    level <- .match_level(scbench, all_deconv_res[[1]], "lod")
+    all_deconv_res <- lapply(methods, function(method) {
+        deconv_res <- scbench$deconvolution[[level]]$lod[[method]]
+        deconv_res[is.na(deconv_res)] <- 0
+        return(deconv_res)
+    })
 
     #-- Get mixtures and estimations, calculate limits of detection
-    bench_tb <- .get_lod_mixtures(scbench, all_deconv_res[[1]])
+    bench_tb <- .get_lod_mixtures(scbench, all_deconv_res[[1]], level)
     all_lod_res <- lapply(all_deconv_res, .get_lod_results, bench_tb)
     lod_tb <- lapply(all_lod_res, function(method_res) { method_res$lod_annot }) %>%
         bind_rows() %>%
@@ -995,13 +1178,23 @@ librarySizeNormalization <- function(data, factor = 10^6) {
 
 #' @export
 print.scbench <- function(x) {
-    cat(str_glue("scbench object named {x$project_name} with {ncol(x$ref_data)} reference cells and {x$nlevels} levels of annotation"))
+    cat(str_glue("scbench object named {x$project_name} with {length(unique(unlist(x$pop_hierarchy)))} reference populations and {x$nlevels} levels of annotation"))
     cat("\n")
     cat(x$status)
     cat("\n")
     if(!is.null(x[["deconvolution"]])) {
         cat("deconvolution results: ")
-        cat(paste0(names(x[["deconvolution"]]), collapse = ", "))
+        cat("\n")
+        levels <- names(x[["deconvolution"]])
+        for(level in levels) {
+            types <- names(x[["deconvolution"]][[level]])
+            cat(str_glue("   {level}: "))
+            cat("\n")
+            for (type in types) {
+                cat(str_glue("      {type}:"), paste(names(x[["deconvolution"]][[level]][[type]]), collapse = ", "))
+                cat("\n")
+            }
+        }
     }
 }
 #' @import hitandrun
@@ -1015,6 +1208,54 @@ print.scbench <- function(x) {
     rownames(hr) <- paste0("s", 1:nrow(hr))
     return(hr)
 }
+
+#' @import tidyverse
+.pop_hierarchy <- function(bounds) {
+    nlevels <- str_extract(names(bounds), "l.") %>% unique() %>% str_remove("^l") %>% as.numeric %>% max()
+    pop_hierarchy <- tibble(l1 = bounds$l1$population)
+    if(nlevels > 1) {
+        for (i in 2:nlevels) {
+            finer_lev <- paste0("l", i)
+            coarser_lev <- paste0("l", i-1)
+            upper_pops <- pop_hierarchy[[coarser_lev]] %>% unique()
+            split_pops <- str_remove(names(bounds), paste0(finer_lev, "_"))[-1]
+            other_pops <- setdiff(upper_pops, split_pops)
+
+            new_hierarch_kept <- tibble(coarse = other_pops, fine = other_pops)
+            new_hierarch_split <- lapply(split_pops, function(pop) {
+                tibble(coarse = pop, fine = bounds[[paste0(finer_lev, "_", pop)]]$population)
+            }) %>% bind_rows()
+            new_hierarch <- bind_rows(new_hierarch_kept, new_hierarch_split)
+            colnames(new_hierarch) <- c(coarser_lev, finer_lev)
+
+            pop_hierarchy <- right_join(pop_hierarchy, new_hierarch)
+        }
+    }
+    return(pop_hierarchy)
+}
+
+#' @import tidyverse
+.normalize_deconvolution_by_hierarchy <- function(hierarchy_list, finer_deconv, coarser_deconv) {
+    finer_deconv_norm <- lapply(1:length(hierarchy_list), function(j) {
+        coarse_col <- paste0("frac_", names(hierarchy_list)[j])
+        coarse_vec <- coarser_deconv[[coarse_col]]
+
+        fine_cols <- paste0("frac_", hierarchy_list[[j]])
+        fine_mat <- finer_deconv[,fine_cols]
+        fine_mat_norm <- lapply(1:nrow(fine_mat), function(ii) {
+            fine_mat[ii,] / (sum(fine_mat[ii,])/coarse_vec[ii])
+        }) %>% bind_rows()
+        return(fine_mat_norm)
+    }) %>% bind_cols() %>%
+        tibble() %>%
+        mutate(sample = finer_deconv$sample,
+               method = finer_deconv$method) %>%
+        relocate(sample) %>%
+        .[,colnames(finer_deconv)]
+
+    return(finer_deconv_norm)
+}
+
 #' @import tidyverse
 .constraints_from_bounds <- function(pop_bounds) {
     pops <- pop_bounds$population
@@ -1040,14 +1281,15 @@ theme_sparse <- function (...)
               axis.text.y = element_text(color = "black"))
 }
 #' @import tidyverse
-.aggregate_deconvolution_results <- function(scbench) {
+.aggregate_deconvolution_results <- function(scbench, level) {
     pop_props <- scbench[["mixtures"]][["population"]]
     #-- Get deconv results
-    deconv_res <- bind_rows(scbench$deconvolution$population)
+    deconv_res <- bind_rows(scbench$deconvolution[[level]]$population)
 
     #-- Get benchmark fractions
-    level <- .match_level(scbench, deconv_res, "population")
+    # level <- .match_level(scbench, deconv_res, "population")
     bench_tb <- pop_props[[level]] %>%
+        as.data.frame() %>%
         rownames_to_column("sample") %>%
         tibble() %>%
         rename_with(~ paste0("truth_", .), .cols = -sample)
@@ -1083,9 +1325,10 @@ theme_sparse <- function (...)
     return(new_status)
 }
 #' @import tidyverse
-.get_benchmark_fractions <- function(scbench, deconv_res) {
-    level <- .match_level(scbench, deconv_res, "population")
+.get_benchmark_fractions <- function(scbench, deconv_res, level) {
+    # level <- .match_level(scbench, deconv_res, "population")
     bench_tb <- scbench[["mixtures"]][["population"]][[level]] %>%
+        as.data.frame() %>%
         rownames_to_column("sample") %>%
         mutate(sample = ifelse(str_detect(sample, "s"), sample, paste0("s", sample))) %>%
         tibble() %>%
@@ -1109,7 +1352,6 @@ theme_sparse <- function (...)
 #' @importFrom Matrix rowSums
 .get_pseudobulk <- function(scbench, type, level, seed, ncores, ncells, by_batch) {
     cache_dir <- filePath(scbench$cache, scbench$project_name, level, "pseudobulks", type)
-    dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
     cache_loc <- filePath(cache_dir, "pseudobulks.RDS")
     if(file.exists(cache_loc)) {
         message("Pseudobulks for ", type, " found in cache. Skipping...")
@@ -1122,6 +1364,8 @@ theme_sparse <- function (...)
     #-- Get metadata
     if(type == "population") {
         pb_props <- pop_props[[level]]
+    } else if (type == "lod") {
+        pb_props <- pop_props[[level]][,-c(1,2)]
     } else {
         pb_props <- pop_props[[level]][,-1]
     }
@@ -1185,13 +1429,17 @@ theme_sparse <- function (...)
         pops_cells <- split(rownames(meta), meta[,level])[pops]
         pseudobulks <- pbmclapply(1:nsamps, function(i) {
             sample_ncells <- round(pb_props[i,] * ncells)
+            sample_ncells[sample_ncells < 0] <- 0
             sample_cells <- lapply(1:length(sample_ncells), function(j) {
                 ps_n <- as.integer(sample_ncells[j])
                 pop_cells <- unlist(pops_cells[names(sample_ncells)[j]])
                 if(length(pop_cells) < ps_n) {
                     warning("--- Some cell profiles had to be repeated... `ncells` might be set too high for this dataset.")
+                    sample(pop_cells, ps_n, replace = TRUE)
+                } else {
+                    sample(pop_cells, ps_n)
+
                 }
-                sample(pop_cells, ps_n)
             }) %>% reduce(c)
             rowSums(scbench$ref_data[,sample_cells]@assays$RNA@counts)
         }, mc.cores = ncores)
@@ -1201,13 +1449,18 @@ theme_sparse <- function (...)
     colnames(pb_mat) <- paste0("s", 1:ncol(pb_mat))
     pb_res <- list(pseudobulk = pb_mat, props = pb_props)
     gc()
+
+    if(is.character(pb_res$pseudobulk[1,1])) {
+        stop(str_glue("Pseudobulk for `{type}` failed..."))
+    }
+    dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
     saveRDS(pb_res, file = cache_loc)
     return(pb_res)
 }
 
 #' @import tidyverse
 #' @importFrom data.table as.data.table
-.get_spillover_mixtures <- function(scbench, deconv_res) {
+.get_spillover_mixtures <- function(scbench, deconv_res, level) {
     level <- .match_level(scbench, deconv_res, method = "spillover")
     bench_tb <- scbench[["mixtures"]][["spillover"]][[level]] %>%
         tibble() %>%
@@ -1245,17 +1498,17 @@ theme_sparse <- function (...)
 }
 #' @import tidyverse
 #' @importFrom data.table as.data.table
-.get_lod_mixtures <- function(scbench, deconv_res) {
-    level <- .match_level(scbench, deconv_res, "lod")
+.get_lod_mixtures <- function(scbench, deconv_res, level) {
+    # level <- .match_level(scbench, deconv_res, "lod")
     bench_tb <- scbench$mixtures$lod[[level]] %>% as.data.table()
     bench_tb[,truth := get(population), by = population]
     bench_tb <- bench_tb %>%
-        mutate(sample = paste0("s", 1:n())) %>%
         select(sample, population, truth) %>%
         as_tibble()
 }
 #' @import tidyverse
 #' @importFrom data.table as.data.table
+#' @importFrom broom tidy
 .get_lod_results <- function(deconv_res, bench_tb) {
     lod_tb <- bench_tb %>%
         left_join(deconv_res, by = "sample") %>%
@@ -1265,19 +1518,57 @@ theme_sparse <- function (...)
     lod_tb <- lod_tb %>%
         select(sample, population, method, truth, est) %>%
         as_tibble()
-    est_at_zero <- lod_tb %>%
-        group_by(population) %>%
+
+    #-- Get blank stats
+    blank_metrics <- lod_tb %>%
         filter(truth == 0) %>%
-        select(population, min_est = est)
+        group_by(population, method) %>%
+        summarize(blank_mean = mean(est, na.rm = TRUE), blank_sd = sd(est, na.rm = TRUE))
+
+    lod_filt <- lod_tb %>%
+        filter(truth != 0)
+
+    models <- lod_filt %>%
+        group_by(population, method) %>%
+        do(model = lm(est ~ truth, data = .))
+
+    reg_slopes <- sapply(models$model, function(model) {
+        tidy(model)$estimate[1]
+    })
+    reg_intercepts <- sapply(models$model, function(model) {
+        tidy(model)$estimate[2]
+    })
+
+    lod_metrics <- models %>%
+        select(-model) %>%
+        bind_cols(tibble(slopes = reg_slopes,
+               intercepts = reg_intercepts)) %>%
+        left_join(blank_metrics) %>%
+        mutate(lod_min = (blank_mean + 2*blank_sd))
 
     lod_annot <- lod_tb %>%
+        left_join(select(lod_metrics, population, method, lod_min),
+                  by = c("population", "method")) %>%
+        filter(truth > 0) %>%
+        mutate(find_lod = est > lod_min) %>%
+        filter(find_lod) %>%
         group_by(population) %>%
-        left_join(est_at_zero, by = "population") %>%
-        filter(truth >= 0.005, est >= max(0.005, min_est)) %>%
         slice_min(truth) %>%
-        mutate(label = paste0("LoD = ", signif(truth, 3)))
+        mutate(label = paste0("LoD = ", signif(truth, 3))) %>%
+        select(population, method, truth, est, label)
 
-    return(list(lod_tb = lod_tb, lod_annot = lod_annot))
+
+    return(list(lod_tb = lod_tb, lod_annot = lod_annot, blank_metrics = blank_metrics))
+}
+
+.get_level <- function(level, scbench) {
+    if(is.null(level)) {
+        message("Using finest grained annotation...")
+        level <- paste0("l", scbench$nlevels)
+    } else{
+        assert(level %in% names(scbench$deconvolution))
+    }
+    return(level)
 }
 
 # credit: https://stackoverflow.com/questions/57927458/get-rid-of-empty-panels-in-the-first-row-of-facet-grid

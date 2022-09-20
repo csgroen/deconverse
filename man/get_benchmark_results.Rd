@@ -4,7 +4,12 @@
 \alias{get_benchmark_results}
 \title{Get benchmark results from `scbench` object}
 \usage{
-get_benchmark_results(scbench, methods = NULL, type = "population")
+get_benchmark_results(
+  scbench,
+  methods = NULL,
+  level = NULL,
+  type = "population"
+)
 }
 \arguments{
 \item{scbench}{an `scbench` object already processed by `deconvolute` or

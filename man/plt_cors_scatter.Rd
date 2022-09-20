@@ -5,13 +5,16 @@
 \title{Plot correlations by population between deconvolution results
 for simulated populations and true mixtures used for the pseudobulk}
 \usage{
-plt_cors_scatter(scbench, method)
+plt_cors_scatter(scbench, method, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
 
 \item{method}{a string, one of `deconvolution_methods()`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a ggplot object

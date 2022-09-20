@@ -6,13 +6,16 @@
 of the pseudobulk where the method estimation is higher than at proportion=0 for
 each population}
 \usage{
-plt_lod_scatter(scbench, method)
+plt_lod_scatter(scbench, method, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
 
 \item{method}{a string, one of `deconvolution_methods()`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a ggplot object

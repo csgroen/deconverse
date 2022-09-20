@@ -13,7 +13,7 @@
 #' expression analysis between populations for selection of markers
 #' @param n_cores number of cores used for computation
 #'
-#' @return a tibble with deconvolution fractions
+#' @return an screference object updated with BayesPrism reference
 #' @note Reference: Chu, T., Wang, Z., Pe’er, D. et al. Cell type and gene
 #' expression deconvolution with BayesPrism enables Bayesian integrative
 #' analysis across bulk and single-cell RNA sequencing in oncology.

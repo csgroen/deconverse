@@ -4,11 +4,14 @@
 \alias{plt_lod_heatmap}
 \title{Plot heatmap summarizing limit of detection by population and method}
 \usage{
-plt_lod_heatmap(scbench)
+plt_lod_heatmap(scbench, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a list, containing `heatmap`, a ggheatmap object, and `lod_table`, a

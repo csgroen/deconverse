@@ -7,20 +7,16 @@ population mixtures in an `scbench` object}
 \usage{
 pseudobulks(
   scbench,
-  level = NULL,
   ncells = 2000,
   ncores = 8,
   shrink_obj = TRUE,
   by_batch = FALSE,
-  seed = NULL
+  seed = 0
 )
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `population_mixtures`}
-
-\item{level}{a string character, the reference data level for pseudobulk pooling
-(e.g. `"l1"`, `"l2"`)}
 
 \item{ncells}{an integer, the number of cells to pool into pseudobulk.}
 
@@ -32,6 +28,9 @@ estimating the pseudobulks}
 the `batch_id` provided when creating the object.}
 
 \item{seed}{an integer representing a "seed", for reproducibility of mixtures.}
+
+\item{level}{a string character, the reference data level for pseudobulk pooling
+(e.g. `"l1"`, `"l2"`)}
 }
 \value{
 an object of class `scbench`

@@ -5,7 +5,7 @@
 \title{Simulate mixtures to find the limit of detection of each population in
 mixtures in an `scbench` object}
 \usage{
-mixtures_lod(scbench, max_prop = 0.1, step = 0.005)
+mixtures_lod(scbench, max_prop = 0.2, step = 0.01)
 }
 \arguments{
 \item{scbench}{an `scbench` object}
@@ -15,6 +15,12 @@ tested}
 
 \item{step}{the step between 0 and `max_prop` in a sequence to be tested as
 limit of detection}
+
+\item{nsamp_per_step}{number of samples per step, used for statistics of the
+results for the calibration curves}
+
+\item{prop_noise_sd}{a value for added noise to the different samples generated
+for each observation}
 }
 \value{
 an object of class `scbench`

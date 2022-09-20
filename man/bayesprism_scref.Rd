@@ -35,7 +35,7 @@ expression analysis between populations for selection of markers}
 \item{n_cores}{number of cores used for computation}
 }
 \value{
-a tibble with deconvolution fractions
+an screference object updated with BayesPrism reference
 }
 \description{
 Compute reference matrix from an `screference` object using

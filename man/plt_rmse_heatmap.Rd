@@ -5,11 +5,14 @@
 \title{Plot RMSE between deconvolution results for simulated populations and
 true mixtures used for the pseudobulks}
 \usage{
-plt_rmse_heatmap(scbench)
+plt_rmse_heatmap(scbench, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a

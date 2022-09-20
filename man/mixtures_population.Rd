@@ -4,7 +4,7 @@
 \alias{mixtures_population}
 \title{Simulate sample population mixtures given bounds in an `scbench` object}
 \usage{
-mixtures_population(scbench, nsamps = 1000, seed = NULL)
+mixtures_population(scbench, nsamps = 1000, seed = 0)
 }
 \arguments{
 \item{scbench}{an `scbench` object}

@@ -6,6 +6,8 @@
 \alias{deconverse-package}
 \title{deconverse: Benchmarking of bulk deconvolution methods from single-cell references}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 This package implements wrappers for methods of bulk RNA-seq deconvolution using single-cell data to build cell population profiles. Using pseudobulk simulations, deconverse also allows for benchmarking and comparing different deconvolution methods in a context-specific manner.
 }
 \keyword{internal}

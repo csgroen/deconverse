@@ -5,13 +5,16 @@
 \title{Plot correlations between deconvolution results and spillover mixtures
 between each pair of populations}
 \usage{
-plt_spillover_scatter(scbench, method)
+plt_spillover_scatter(scbench, method, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
 
 \item{method}{a string, one of `deconvolution_methods()`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a ggplot object

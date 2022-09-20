@@ -4,11 +4,14 @@
 \alias{plt_spillover_heatmap}
 \title{Plot heatmap summarizing spillover RMSE by population and method}
 \usage{
-plt_spillover_heatmap(scbench)
+plt_spillover_heatmap(scbench, level = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
 `deconvolute`}
+
+\item{level}{an annotation level to show. Finest-grained annotation (highest level)
+by default.}
 }
 \value{
 a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a

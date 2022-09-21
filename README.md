@@ -18,6 +18,7 @@ To install, run:
 ``` r
 remotes::install_github("csgroen/ggheatmapper")
 remotes::install_github("jamesotto852/ggdensity")
+remotes::install_github("Danko-Lab/BayesPrism/BayesPrism")
 remotes::install_github("csgroen/deconverse")
 ```
 

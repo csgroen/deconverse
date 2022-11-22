@@ -44,7 +44,7 @@ new_scbench <- function(ref_scrna,
         assert(batch_id %in% colnames(ref_scrna@meta.data))
         colnames(ref_scrna@meta.data)[colnames(ref_scrna@meta.data) == batch_id] <- "batch_id"
     }
-    pop_hierarchy <- .pop_hierarchy(pop_bounds)
+    pop_hierarchy <- .pop_hierarchy(pop_bounds, ref_scrna@meta.data)
 
     #-- Create object
     scbench <- list(ref_data = ref_scrna,

@@ -4,7 +4,7 @@
     if(!"deconverse" %in% envs$name) {
         message("Creating `deconverse` conda environment...")
         conda_create("deconverse",
-                     python_version = "3.8",
+                     python_version = "3.7",
                      packages = c("numpy", "pandas", "anndata",
                                   "scipy", "scikit-learn", "matplotlib"))
     } else {

@@ -31,7 +31,8 @@ new_scbench <- function(ref_scrna,
     if(nl > 1) {
         for(i in 2:nl) {
             subpops <- str_subset(names(pop_bounds), paste0("^l",i)) %>% str_remove(paste0("^l",i, "_"))
-            assert(subpops %in% pop_bounds[[paste0("l", i-1)]]$population)
+            lm1_bounds <- str_subset(names(pop_bounds), paste0("l", i-1))
+            assert(any(sapply(lm1_bounds, function(lm1) subpops %in% pop_bounds[[lm1]]$population)))
         }
     }
     assert(all(annot_ids %in% colnames(ref_scrna@meta.data)))
@@ -1210,23 +1211,25 @@ print.scbench <- function(x) {
 }
 
 #' @import tidyverse
-.pop_hierarchy <- function(bounds) {
+.pop_hierarchy <- function(bounds, ref_meta) {
     nlevels <- str_extract(names(bounds), "l.") %>% unique() %>% str_remove("^l") %>% as.numeric %>% max()
     pop_hierarchy <- tibble(l1 = bounds$l1$population)
     if(nlevels > 1) {
         for (i in 2:nlevels) {
             finer_lev <- paste0("l", i)
             coarser_lev <- paste0("l", i-1)
-            upper_pops <- pop_hierarchy[[coarser_lev]] %>% unique()
-            split_pops <- str_remove(names(bounds), paste0(finer_lev, "_"))[-1]
-            other_pops <- setdiff(upper_pops, split_pops)
+            upper_pops <- unique(ref_meta[,coarser_lev])
+            split_pops <- unique(ref_meta[,finer_lev])
 
-            new_hierarch_kept <- tibble(coarse = other_pops, fine = other_pops)
-            new_hierarch_split <- lapply(split_pops, function(pop) {
-                tibble(coarse = pop, fine = bounds[[paste0(finer_lev, "_", pop)]]$population)
-            }) %>% bind_rows()
-            new_hierarch <- bind_rows(new_hierarch_kept, new_hierarch_split)
+            new_hierarch <- table(ref_meta[,coarser_lev], ref_meta[,finer_lev]) %>%
+                as.data.frame() %>%
+                filter(Freq > 0) %>%
+                select(-Freq)
             colnames(new_hierarch) <- c(coarser_lev, finer_lev)
+            # Check splits
+            split_pops <- upper_pops[sapply(split(new_hierarch[,2], new_hierarch[,1]), length) > 1]
+            split_pops <- paste0(finer_lev, "_", split_pops)
+            assert(split_pops %in% names(bounds))
 
             pop_hierarchy <- right_join(pop_hierarchy, new_hierarch)
         }

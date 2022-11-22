@@ -154,6 +154,9 @@ new_hscreference <- function(
         coarse_annot <- annot_ids[1]
         colnames(meta)[colnames(meta) == coarse_annot] <- "annot_id"
         pops <- unique(meta[,"annot_id"])
+        if(any(str_detect(pops, c("\\/|\\-"), negate = TRUE))) {
+            stop("Population names should not contain `/` or `-`")
+        }
 
         message("-- Subsampling cells...")
         assert(all(names(sample_cells) %in% pops))

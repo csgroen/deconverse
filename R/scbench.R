@@ -28,6 +28,7 @@ new_scbench <- function(ref_scrna,
     #-- Checks
     assert(class(ref_scrna) == "Seurat")
     assert(str_detect(names(pop_bounds), "^l[0-9]+"))
+    assert(lapply(pop_bounds, function(bounds) all(colnames(bounds) %in% c("population", "lower", "upper"))))
     if(nl > 1) {
         for(i in 2:nl) {
             subpops <- str_subset(names(pop_bounds), paste0("^l",i)) %>% str_remove(paste0("^l",i, "_"))
@@ -84,6 +85,11 @@ mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
     bounds <- scbench$pop_bounds
     #-- Hit-and-run MCMC
     samples <- lapply(bounds, .fit_hitandrun, n.samples = nsamps, seed)
+    for(i in 1:3) {
+        message(i)
+        pop_bounds <- bounds[[i]]
+        samples <- .fit_hitandrun(bounds[[i]], n.samples = nsamps, seed)
+    }
 
     #-- Calculate higher level mixtures
     levels <- str_remove(names(bounds), "^l") %>% str_remove("_.*") %>% as.numeric()

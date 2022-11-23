@@ -28,7 +28,7 @@ new_scbench <- function(ref_scrna,
     #-- Checks
     assert(class(ref_scrna) == "Seurat")
     assert(str_detect(names(pop_bounds), "^l[0-9]+"))
-    assert(lapply(pop_bounds, function(bounds) all(colnames(bounds) %in% c("population", "lower", "upper"))))
+    assert(all(sapply(pop_bounds, function(bounds) all(colnames(bounds) %in% c("population", "lower", "upper")))))
     if(nl > 1) {
         for(i in 2:nl) {
             subpops <- str_subset(names(pop_bounds), paste0("^l",i)) %>% str_remove(paste0("^l",i, "_"))

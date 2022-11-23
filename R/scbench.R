@@ -85,11 +85,6 @@ mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
     bounds <- scbench$pop_bounds
     #-- Hit-and-run MCMC
     samples <- lapply(bounds, .fit_hitandrun, n.samples = nsamps, seed)
-    for(i in 1:3) {
-        message(i)
-        pop_bounds <- bounds[[i]]
-        samples <- .fit_hitandrun(bounds[[i]], n.samples = nsamps, seed)
-    }
 
     #-- Calculate higher level mixtures
     levels <- str_remove(names(bounds), "^l") %>% str_remove("_.*") %>% as.numeric()
@@ -105,7 +100,7 @@ mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
 
             #-- Get subsetted populations
             ln_names <- str_subset(names(bounds), lev_abbr)
-            rep_coarse <- str_remove(ln_names, "l.*_")
+            rep_coarse <- str_remove(ln_names, "l[0-9]+_")
             missing_coarse <- setdiff(colnames(coarse_tb), rep_coarse)
             names(ln_names) <- rep_coarse
 
@@ -115,7 +110,11 @@ mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
             }) %>% bind_cols() %>% as.data.frame()
             fine_pops <- cbind(coarse_tb[,missing_coarse], fine_pops)
             colnames(fine_pops)[1:length(missing_coarse)] <- missing_coarse
-
+            #-- Fix names if changed
+            name_corresps <- split(pull(scbench$pop_hierarchy, !!lev_abbr), pull(scbench$pop_hierarchy, !!upper_lev)) %>%
+                sapply(as.character)
+            rep_coarse_new <- name_corresps[sapply(name_corresps, length) == 1] %>% unlist()
+            colnames(fine_pops) <- str_replace_all(colnames(fine_pops), rep_coarse_new)
             pop_props[[lev_abbr]] <- fine_pops
         }
     }

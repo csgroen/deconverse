@@ -385,7 +385,8 @@ deconvolute.scbench <- function(scbench,
         assert(scref$nlevels == scbench$nlevels)
         levels <- paste0("l", 1:scbench$nlevels)
         same_populations <- sapply(1:scref$nlevels, function(lv) {
-            all(unique(scbench$pop_hierarchy[[lv]]) %in% unique(scref$hpop_table[[lv]]))
+            bench_pops <- unique(scbench$pop_hierarchy[[lv]])
+            all(bench_pops %in% intersect(bench_pops, unique(scref$hpop_table[[lv]])))
         })
         if(!all(same_populations)) {
             stop("Populations in `scref` and `scbench` are not the same at all levels.")

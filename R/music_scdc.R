@@ -14,7 +14,7 @@ music_deconvolute <- function(bulk_data, scref) {
     }
     est_prop <- music_prop(bulk.eset = ExpressionSet(assayData = bulk_data),
                            sc.eset = ExpressionSet(as.matrix(scref$seurat_obj@assays$RNA@counts),
-                                                   phenoData =AnnotatedDataFrame(scref$seurat_obj@meta.data)),
+                                                   phenoData = AnnotatedDataFrame(scref$seurat_obj@meta.data)),
                            clusters = "annot_id",
                            samples = "batch_id")
     gc()

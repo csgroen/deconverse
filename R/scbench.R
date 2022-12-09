@@ -444,7 +444,8 @@ deconvolute.scbench <- function(scbench,
             } else if(method == "ols") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running OLS using the DWLS signature matrix...")
-                deconv_res <- ols_deconvolute(data, ref, ...)
+                # deconv_res <- ols_deconvolute(data, ref, ...)
+                deconv_res <- ols_deconvolute(data, ref, ncores = 8)
             } else if(method == "svr") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running SVR using the DWLS signature matrix...")
@@ -471,7 +472,8 @@ deconvolute.scbench <- function(scbench,
             finer_deconv <- scbench[["deconvolution"]][[finer]][["population"]][[method]]
             coarser_deconv <- scbench[["deconvolution"]][[coarser]][["population"]][[method]]
             pop_hierarchy <- scbench$pop_hierarchy
-            hierarchy_list <- pop_hierarchy %>% pull(!! finer, !! coarser) %>% split(., names(.))
+            hierarchy_list <- pop_hierarchy %>% pull(!! finer, !! coarser) %>% split(., names(.)) %>%
+                sapply(unique)
 
             finer_deconv_norm <- .normalize_deconvolution_by_hierarchy(
                 hierarchy_list, finer_deconv, coarser_deconv)

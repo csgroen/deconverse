@@ -46,7 +46,7 @@ bayesprism_scref <- function(scref,
     #-- Get annotations
     type_labels <- scref$seurat_obj@meta.data[,"annot_id"]
     batch_annot <- scref$seurat_obj@meta.data[,"batch_id"]
-    state_labels <- paste0(type_labels, "_", batch_annot)
+    state_labels <- type_labels
 
     #-- Run expression
     pseudo_count_param <- ifelse(data_type == "10X", 0.1, 10)

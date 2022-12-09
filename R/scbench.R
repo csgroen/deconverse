@@ -444,8 +444,7 @@ deconvolute.scbench <- function(scbench,
             } else if(method == "ols") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running OLS using the DWLS signature matrix...")
-                # deconv_res <- ols_deconvolute(data, ref, ...)
-                deconv_res <- ols_deconvolute(data, ref, ncores = 8)
+                deconv_res <- ols_deconvolute(data, ref, ...)
             } else if(method == "svr") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running SVR using the DWLS signature matrix...")

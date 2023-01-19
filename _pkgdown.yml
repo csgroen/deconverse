@@ -18,15 +18,23 @@ reference:
 - title: Deconvolution
   desc: Functions to run deconvolution based on a single-cell reference
 - contents:
-    - matches("^deconvolute$")
-    - matches("deconvolute_all")
-    - ends_with("deconvolute")
-- title: Plotting
+    - deconvolute.matrix
+    - deconvolute.scbench
+    - deconvolute_all.matrix
+    - deconvolute_all.scbench
+    - ends_with("_deconvolute")
+- title: Plotting and Results
   desc: Functions to evaluate visually evaluate benchmarking results
 - contents:
     - starts_with("plt_")
+    - get_benchmark_results
+- title: Data
+  desc: Included data
+- contents:
+    - pbmc
 - title: Extras
   desc: Other package functions
 - contents:
     - delete_cached
     - install_cibersortx
+    - .pp_PBMCs

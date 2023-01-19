@@ -1,3 +1,32 @@
 url: https://csgroen.github.io/deconverse
 template:
   bootstrap: 5
+reference:
+- title: Reference
+  desc: Functions to build and interact with (hierarchical) single-cell reference objects.
+- contents:
+    - new_screference
+    - new_hscreference
+    - matches("compute_reference")
+    - ends_with("_scref")
+- title: Benchmarking
+  desc: Functions to create a benchmarking scbench object.
+- contents:
+    - new_scbench
+    - starts_with("mixtures")
+    - pseudobulks
+- title: Deconvolution
+  desc: Functions to run deconvolution based on a single-cell reference
+- contents:
+    - matches("^deconvolute$")
+    - matches("deconvolute_all")
+    - ends_with("deconvolute")
+- title: Plotting
+  desc: Functions to evaluate visually evaluate benchmarking results
+- contents:
+    - starts_with("plt_")
+- title: Extras
+  desc: Other package functions
+- contents:
+    - delete_cached
+    - install_cibersortx

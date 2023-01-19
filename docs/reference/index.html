@@ -41,9 +41,98 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a></h2>
+      
+      <p class="section-desc"></p><p>Functions to build and interact with (hierarchical) single-cell reference objects.</p>
+
+      
+    </div><div id="" class="section level2">
       
       
+      
+
+      <dl><dt>
+          
+          <code><a href="new_screference.html">new_screference()</a></code> 
+        </dt>
+        <dd>Generate single-cell reference (`screference`) object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="new_hscreference.html">new_hscreference()</a></code> 
+        </dt>
+        <dd>Generate multi-level hierarchical single-cell reference (`hscreference`) object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="compute_reference.html">compute_reference(<i>&lt;screference&gt;</i>)</a></code> <code><a href="compute_reference.html">compute_reference(<i>&lt;hscreference&gt;</i>)</a></code> 
+        </dt>
+        <dd>Compute reference given a deconvolution method from an `screference` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="autogenes_scref.html">autogenes_scref()</a></code> 
+        </dt>
+        <dd>Compute reference matrix from an `screference` object using
+AutoGeneS</dd>
+      </dl><dl><dt>
+          
+          <code><a href="bayesprism_scref.html">bayesprism_scref()</a></code> 
+        </dt>
+        <dd>Compute reference matrix from an `screference` object using
+BayesPrism</dd>
+      </dl><dl><dt>
+          
+          <code><a href="cibersortx_scref.html">cibersortx_scref()</a></code> 
+        </dt>
+        <dd>Compute reference signature matrix from `screference` object using
+method implemented in CIBERSORTx</dd>
+      </dl><dl><dt>
+          
+          <code><a href="dwls_scref.html">dwls_scref()</a></code> 
+        </dt>
+        <dd>Compute reference signature matrix from `screference` object using
+method implemented in DWLS package for methods `dwls`, `svr` and `ols`</dd>
+      </dl></div><div class="section level2">
+      <h2 id="benchmarking">Benchmarking<a class="anchor" aria-label="anchor" href="#benchmarking"></a></h2>
+      
+      <p class="section-desc"></p><p>Functions to create a benchmarking scbench object.</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
+          
+          <code><a href="new_scbench.html">new_scbench()</a></code> 
+        </dt>
+        <dd>Generate `scbench` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="mixtures_lod.html">mixtures_lod()</a></code> 
+        </dt>
+        <dd>Simulate mixtures to find the limit of detection of each population in
+mixtures in an `scbench` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="mixtures_population.html">mixtures_population()</a></code> 
+        </dt>
+        <dd>Simulate sample population mixtures given bounds in an `scbench` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="mixtures_spillover.html">mixtures_spillover()</a></code> 
+        </dt>
+        <dd>Simulate mixtures for measuring spillover between all pairs of populations
+in an `scbench` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="pseudobulks.html">pseudobulks()</a></code> 
+        </dt>
+        <dd>Generate pseudobulk gene expression from single-cell RNA-seq given
+population mixtures in an `scbench` object</dd>
+      </dl></div><div class="section level2">
+      <h2 id="deconvolution">Deconvolution<a class="anchor" aria-label="anchor" href="#deconvolution"></a></h2>
+      
+      <p class="section-desc"></p><p>Functions to run deconvolution based on a single-cell reference</p>
 
       
     </div><div id="" class="section level2">
@@ -239,8 +328,87 @@ population mixtures in an `scbench` object</dd>
           <code><a href="svr_deconvolute.html">svr_deconvolute()</a></code> 
         </dt>
         <dd>Support vector regression (SVR) deconvolution of bulk data using an `screference`</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a></h2>
+      
+      <p class="section-desc"></p><p>Functions to evaluate visually evaluate benchmarking results</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
+          
+          <code><a href="plt_cor_heatmap.html">plt_cor_heatmap()</a></code> 
+        </dt>
+        <dd>Plot heatmap of correlation between deconvolution results for simulated
+populations and true mixtures used for the pseudobulks</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_cors_scatter.html">plt_cors_scatter()</a></code> 
+        </dt>
+        <dd>Plot correlations by population between deconvolution results
+for simulated populations and true mixtures used for the pseudobulk</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_lod_heatmap.html">plt_lod_heatmap()</a></code> 
+        </dt>
+        <dd>Plot heatmap summarizing limit of detection by population and method</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_lod_scatter.html">plt_lod_scatter()</a></code> 
+        </dt>
+        <dd>Plot limit of detection of deconvolution for each population as the proportion
+of the pseudobulk where the method estimation is higher than at proportion=0 for
+each population</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_population_mixtures.html">plt_population_mixtures()</a></code> 
+        </dt>
+        <dd>Plot sample population mixtures from an `scbench` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_rmse_heatmap.html">plt_rmse_heatmap()</a></code> 
+        </dt>
+        <dd>Plot RMSE between deconvolution results for simulated populations and
+true mixtures used for the pseudobulks</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_spillover_heatmap.html">plt_spillover_heatmap()</a></code> 
+        </dt>
+        <dd>Plot heatmap summarizing spillover RMSE by population and method</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_spillover_scatter.html">plt_spillover_scatter()</a></code> 
+        </dt>
+        <dd>Plot correlations between deconvolution results and spillover mixtures
+between each pair of populations</dd>
+      </dl></div><div class="section level2">
+      <h2 id="extras">Extras<a class="anchor" aria-label="anchor" href="#extras"></a></h2>
+      
+      <p class="section-desc"></p><p>Other package functions</p>
+
+      
+    </div><div id="" class="section level2">
+      
+      
+      
+
+      <dl><dt>
+          
+          <code><a href="delete_cached.html">delete_cached()</a></code> 
+        </dt>
+        <dd>Delete cached data on an `screference` object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="install_cibersortx.html">install_cibersortx()</a></code> 
+        </dt>
+        <dd>Installs CIBERSORTx container using docker or singularity</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

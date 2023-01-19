@@ -100,20 +100,25 @@ bayesprism_scref <- function(scref,
 #' @export
 bayesprism_deconvolute <- function(bulk_data,
                                    scref,
-                                   cache_path = "bayes_prism",
+                                   cache_path = NULL,
                                    outlier_cut = 0.01,
                                    outlier_fraction = 0.1,
                                    pseudo_min = 1e-8,
                                    ncores = parallel::detectCores()/2) {
-    cache_fname <- filePath(cache_path, "bayes_prism_res.RData")
+    if(!is.null(cache_path)) {
+        cache_fname <- ""
+    }
+    else {
+        cache_fname <- filePath(cache_path, "bayes_prism_res.RData")
+    }
     if(file.exists(cache_fname)) {
         load(cache_fname)
-        bp_tb_res <- get.fraction(bp_res, "final", "type") %>%
-            as.data.frame() %>%
-            rename_with(~ paste0("frac_", .)) %>%
-            rownames_to_column("sample") %>%
-            mutate(method = "BayesPrism") %>%
-            tibble()
+        # bp_tb_res <- get.fraction(bp_res, "final", "type") %>%
+        #     as.data.frame() %>%
+        #     rename_with(~ paste0("frac_", .)) %>%
+        #     rownames_to_column("sample") %>%
+        #     mutate(method = "BayesPrism") %>%
+        #     tibble()
         return(bp_tb_res)
     }
     #-- Checks
@@ -144,7 +149,7 @@ bayesprism_deconvolute <- function(bulk_data,
         mutate(method = "BayesPrism") %>%
         tibble()
 
-    save(bp_res, file = cache_fname)
+    if(cache_fname != "") save(bp_tb_res, file = cache_fname)
 
     return(bp_tb_res)
 }

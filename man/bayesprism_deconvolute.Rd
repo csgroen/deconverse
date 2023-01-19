@@ -7,7 +7,7 @@
 bayesprism_deconvolute(
   bulk_data,
   scref,
-  cache_path = "bayes_prism",
+  cache_path = NULL,
   outlier_cut = 0.01,
   outlier_fraction = 0.1,
   pseudo_min = 1e-08,

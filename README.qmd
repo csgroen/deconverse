@@ -1,6 +1,7 @@
 ---
 format: gfm
 ---
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 ## `deconverse`: bulk RNA-seq deconvolution benchmark using single-cell reference profiles <img src="man/figures/logo.png" align="right" width="120"/>
@@ -37,6 +38,6 @@ library(deconverse)
 install_cibersortx()
 ```
 
-### Usage
+## Usage
 
-[Usage example (v1)](https://drive.google.com/file/d/1ahly_DeekNbGTL9zO8vUgP-FvnMvJEnF/view?usp=sharing)
+[See the PBMC tutorial to get started](http://csgroen.github.io/deconverse/articles/intro_pbmc.html).

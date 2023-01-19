@@ -97,7 +97,7 @@ compute_reference.screference <- function(scref,
     #-- Compute reference
     if(method == "cibersortx") {
         message("CIBERSORTx: Building reference matrix...")
-        out_path <- cibersortx_scref(scref, cache_path = cx_cache, ...)
+        out_path <- cibersortx_scref(scref, cache_path = method_cache, ...)
         reference_res <- cx_ref
     } else if (method == "dwls" | method == "ols" | method == "svr") {
         message("DWLS/OLS/SVR: Building reference matrix using Seurat...")

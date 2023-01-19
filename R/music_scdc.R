@@ -41,8 +41,7 @@ music_prop <- function (bulk.eset, sc.eset, markers = NULL, clusters, samples,
                         iter.max = 1000, nu = 1e-04, eps = 0.01, centered = FALSE,
                         normalize = FALSE, ...)
 {
-    bulk.gene = rownames(bulk.eset)[rowMeans(exprs(bulk.eset)) !=
-                                        0]
+    bulk.gene = rownames(bulk.eset)[rowMeans(exprs(bulk.eset)) != 0]
     bulk.eset = bulk.eset[bulk.gene, , drop = FALSE]
     if (is.null(markers)) {
         sc.markers = bulk.gene
@@ -275,6 +274,9 @@ music_basis <- function (x, non.zero = TRUE, markers = NULL, clusters, samples,
             sum(y)/ncol(y)
         }), na.rm = TRUE)
     })
+    if(is.null(ncol(S))) {
+        stop("`MuSiC requires more than one sample per cluster. See MuSiC documentation.")
+    }
     if (verbose) {
         message("Creating Library Size Matrix...")
     }

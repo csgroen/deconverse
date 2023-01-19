@@ -1,0 +1,428 @@
+---
+title: "`deconverse` introduction: full explained pipeline with PBMCs"
+author: "Clarice S. Groeneveld"
+output: 
+    rmarkdown::html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{intro_pbmc}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Context
+
+We'll demonstrate the functionality of `deconverse` using a PBMC dataset. This is a small single-cell reference with a limited number of cells per cell type particularly for the lower levels of cell type hierarchy.
+
+`deconverse` implements multiple bulk deconvolution methods based on single-cell references, and enhances them by adding hierarchy-awareness. It does so by deconvoluting at the different levels of the cell type hierarchy and using results from the higher level of hierarchy to correct the lower level estimated fractions.
+
+In this example, that comes provided with the `Seurat` package, peripheral blood mononuclear cells (PBMCs) are annotated at 2 levels of hierarchy.
+
+Usually, we would recommend building the single-cell reference on one dataset and benchmarking on a different one. However, for this example, we will split cells into training (reference) and test (benchmarking) set. Then, we will also demonstrate deconvolution of a bulk reference.
+
+Benchmarking is not a necessary step of `deconverse`, but a feature that can be used to compare the different implemented methods in your data type and decide what levels of annotation are trustworthy.
+
+## Load PBMC dataset
+
+First, we load the dataset from Seurat and look at the provided data and its two levels of annotation.
+
+```{r message=FALSE, warning=FALSE}
+library(Seurat)
+library(deconverse)
+library(patchwork)
+
+data(pbmc)
+```
+
+```{r}
+pbmc
+```
+
+```{r fig.width=6.5, fig.height=3}
+((DimPlot(pbmc, reduction = "umap", group.by = "Cell_major_identities", label = TRUE, label.size = 2.5) + NoLegend()) | (DimPlot(pbmc, group.by = "Cell_minor_identities", reduction = "umap", label = TRUE,  label.size = 2.5) + NoLegend())) & 
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 8),
+          plot.title = element_text(size = 9))
+```
+
+PBMCs are annotated at two levels, encoded in the variables `Cell_major_identities` and `Cell_minor_identities` in the object metadata. The UMAP divides the cells into three major clusters, corresponding to the `Cell_major_identities` which we will refer to as the first level of annotation or `l1`. This is broken down into finer-grained annotation in the second level of annotation or `l2`.
+
+## Split train/test
+
+To run both the reference and the benchmarking from this data, we need to split the cells randomly into training (60%) and test (40%) sets.
+
+```{r}
+set.seed(0)
+ncells <- dim(pbmc)[2]
+train_ids <- sample(1:ncells, ncells*0.6)
+test_ids <- setdiff(1:ncells, train_ids) 
+
+pbmc_train <- pbmc[,train_ids]
+pbmc_test <- pbmc[,test_ids]
+```
+
+```{r fig.width=6.5, fig.height=3}
+((DimPlot(pbmc_train, reduction = "umap", group.by = "Cell_major_identities", label = TRUE) + NoLegend()) | (DimPlot(pbmc_test, reduction = "umap", group.by = "Cell_major_identities", label = TRUE) + NoLegend())) & 
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 8),
+          plot.title = element_text(size = 9))
+```
+
+## `screference`: Build single-cell reference from train data
+
+Now, we're ready to build the reference as an `hscreference` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
+
+```{r}
+pbmc_ref <- new_hscreference(pbmc_train,
+                annot_ids = c("Cell_major_identities", "Cell_minor_identities"),
+                project_name = "pbmc_example",
+                batch_id = "orig.ident")
+pbmc_ref
+```
+
+Once the object is created, it can be used to compute a reference for different methods. We'll compute references for DWLS (which is also used for OLS and SVR), svr and AutoGeneS. For all available deconvolution methods, use `deconvolution_methods`.
+
+To run this example much faster, download the cached results here:
+
+```{r results='hide'}
+download.file("https://xfer.curie.fr/get/nil/GV9gQQ8g4qh/scref_cache.zip", "scref_cache.zip")
+unzip("scref_cache.zip")
+file.remove("scref_cache.zip")
+```
+
+And then compute the references (they will be grabbed from the cache):
+
+```{r results='hide'}
+pbmc_ref <- pbmc_ref |>
+    compute_reference("dwls") |>
+    compute_reference("autogenes")
+```
+
+Now the single-cell reference is ready for deconvolution! First, let's benchmark it with our test set.
+
+## `scbench`: Run benchmarking on test data
+
+### Bounds
+
+Now, let's build our benchmarking set. First, we need to understand how the annotations relate to each other to build the "bounds" of our pseudobulk simulations (don't worry, this will be further explained).
+
+```{r}
+table(pbmc_test$Cell_major_identities, pbmc_test$Cell_minor_identities)
+```
+
+We can see that `l1 B` cells only correspond to `l2 B` cells; `l1 Monocytic_lineage` becomes `l2 CD14+ Mono`, `FCGR3A+ Mono` and `DC`; and `l1 TNK` splits into `l2 CD8 T`, `Memory CD4 T`, `Naive CD4 T` and `NK`.
+
+In PBMCs, lymphocytes make up about 70-90% of cells and monocytes make up 10-20%. If we want to make pseudobulk mixtures that resemble real PBMCs, we should include in them more lymphocytes, particularly more abundant T cells, than monocytes. This is what bounds are for.
+
+Bounds are used to create random mixtures with controlled proportions. For each population, we need a lower and upper bound. We'll start with `l1` populations:
+
+```{r}
+l1_bounds <- data.frame(
+    population = c("B", "Monocytic_lineage", "TNK"),
+    lower = c(0.1, 0.1, 0.5),
+    upper = c(0.2, 0.3, 0.85)
+)
+```
+
+We've set that B cells will make up between 10-20% of mixtures, Monocytic lineage between 10-30% and TNK 50-85%. The structure of bounds should always be a `data.frame` with 3 columns (population, lower, upper). Make sure the population names are the same as the levels in the annotation table.
+
+```{r}
+unique(pbmc_test$Cell_major_identities)
+```
+
+Bounds at finer levels of l2 are always given within the context of their coarser grained annotation. For example, `Monocytic lineage` will be split into 3 populations. As dendritic cells are more rare than monocytes, we can make them more rare in our mixtures as well:
+
+```{r}
+l2_mono_bounds <- data.frame(
+        population = c("CD14+ Mono", "FCGR3A+ Mono", "DC"),
+        lower = c(0.3, 0.2, 0),
+        upper = c(0.8, 0.6, 0.2)
+    )
+```
+
+Following the same logic, we can do the bounds for the sub-populations of `TNK`. It's not necessary for `B`, since they are not split into sub-populations in this annotation.
+
+```{r}
+l2_tnk_bounds <- data.frame(
+        population = c("CD8 T", "Memory CD4 T", "Naive CD4 T", "NK"),
+        lower = c(0.2, 0.2, 0.2, 0.1),
+        upper = c(0.5, 0.5, 0.5, 0.3)
+    )
+```
+
+All bounds should be put together into a list, and names should be l1 for the coarsest-grained population and `{level}_{coarse_population_that_was_split}` for finer levels (e.g. `l2_Monocytic_lineage` ).
+
+```{r}
+pbmc_bounds <- list(
+    l1 = l1_bounds,
+    l2_TNK = l2_tnk_bounds,
+    l2_Monocytic_lineage = l2_mono_bounds 
+)
+```
+
+### Create the `scbench`
+
+Now we have the information we need to create our benchmarking set. Variables are very similar to creating an `screference`, with the exception of `pop_bounds`, which we have explained above.
+
+```{r}
+pbmc_bench <- new_scbench(pbmc_test, pop_bounds = pbmc_bounds, 
+                          annot_ids = c("Cell_major_identities",
+                                        "Cell_minor_identities"), 
+                          project_name = "pbmc_example", 
+                          batch_id = "orig.ident")
+pbmc_bench
+```
+
+There are 3 main benchmarks tested by scbench:
+
+-   population
+
+-   limit of detection (lod)
+
+-   spillover
+
+The **population** benchmark, pseudobulk mixtures are created using the random proportions constrained by the bounds. These known proportions will be then compared with the fractions estimated by the deconvolution methods to assess their accuracy.
+
+The **limit of detection** benchmark estimates how low the fraction of a particular population has to be for a method to be able to detect it.
+
+In the **spillover** benchmark, cells for different pairs of populations on the same level are mixed with increasing proportions to evaluate whether the methods can distinguish them well from each other.
+
+The first step is to generate the mixtures for the 3 different methods:
+
+```{r results='hide'}
+pbmc_bench <- pbmc_bench |>
+    mixtures_population(nsamp = 500) |>
+    mixtures_lod() |>
+    mixtures_spillover()
+```
+
+Then, we can generate pseudobulks for these mixtures by mixing 100 random cells that correspond to the proportions given by the mixtures. Finally, we can call the different methods to deconvolute.
+
+As for the screference, the next steps will go a lot faster by using cached results:
+
+```{r results='hide'}
+download.file("https://xfer.curie.fr/get/nil/F7oxfkXO5aq/scbench_cache.zip", "scbench_cache.zip")
+unzip("scbench_cache.zip")
+file.remove("scbench_cache.zip")
+```
+
+Here, we're demonstrating with 6 methods currently implemented. For a full list, see `deconvolution_methods()`.
+
+```{r results='hide', message=FALSE, warning=FALSE}
+pbmc_bench <- pbmc_bench |> 
+    pseudobulks(ncells = 100) |>
+    deconvolute_all(pbmc_ref, methods = c("dwls", "svr", "ols",
+                                          "autogenes", "bisque"))
+```
+
+### Benchmarking results
+
+deconverse implements many functions to produce many benchmarking plots, either for a single method or summarizing and comparing multiple methods.
+
+#### Evaluation of a single method
+
+Here, we generate all evaluation plots for results coming from the dampened weighted least squares (`dwls`). `plt_cors_scatter` plots the correlations between deconvoluted pseudobulk portions found by the method and the true fractions.
+
+```{r fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+plt_cors_scatter(pbmc_bench, method = "dwls")
+```
+
+`plt_lod_scatter` plots correlations between pseudobulk mixtures with increasing proportion of one population and where the limit of detection was established for that method.
+
+```{r fig.height=4, fig.width=6, message=FALSE}
+plt_lod_scatter(pbmc_bench, method = "dwls")
+```
+
+`plt_spillover_scatter` plots the spillover between each pair of populations to help identify pairs of populations that will possibly be confused by the two methods.
+
+```{r fig.height=5, fig.width=6.5, message=FALSE}
+plt_spillover_scatter(pbmc_bench, method = "dwls")
+```
+
+By default, plots will show the benchmark on finest grained annotation available. We can verify on coarser grained by specifying the level:
+
+```{r  fig.height=2, fig.width=5, message=FALSE}
+plt_cors_scatter(pbmc_bench, method = "dwls", level = "l1")
+```
+
+#### Comparison of methods
+
+There are also plots available to compare performance on the same data from different methods. The two main heatmaps compare correlation between pseudobulk mixture proportions and deconvoluted fractions by population, or the root mean squared error (RMSE) from predicted fraction and real fraction.
+
+##### Population
+
+```{r fig.height=4, fig.width=6}
+plt_cor_heatmap(pbmc_bench, level = "l2")$heatmap
+```
+
+```{r fig.height=4, fig.width=6}
+plt_rmse_heatmap(pbmc_bench, level = "l2")$heatmap
+```
+
+##### LoD and Spillover
+
+Plots are also available for limit of detection (lower is better) and spillover RMSE (lower is better).
+
+```{r fig.height=4, fig.width=6, message=FALSE}
+plt_lod_heatmap(pbmc_bench)$heatmap
+```
+
+```{r fig.height=4, fig.width=6, message=FALSE}
+plt_spillover_heatmap(pbmc_bench)$heatmap
+```
+
+## Apply to real PBMC bulk RNA-seq
+
+To demonstrate the real-life usability of deconverse, we will use an example dataset of bulk PBMCs.
+
+### Download data
+
+First, we download the data and keep only the PBMC bulk samples.
+
+```{r}
+library(GEOquery)
+gset <- getGEO("GSE107011")[[1]]
+samp_annot <- pData(gset) %>%
+    tibble() %>%
+    dplyr::filter(source_name_ch1 == "PBMCs") %>%
+    mutate(sample_name = str_remove(title, "_rep.*$"),
+           sample_name = ifelse(str_detect(sample_name, "^\\d"), paste0("X", sample_name), sample_name))
+curl::curl_download("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107011/suppl/GSE107011_Processed_data_TPM.txt.gz", "GSE107011_TPM.txt.gz")
+gexp <- read.table("GSE107011_TPM.txt.gz")
+gexp <- gexp[,samp_annot$sample_name]
+file.remove("GSE107011_TPM.txt.gz")
+```
+
+### Get gene annotation
+
+As gene annotation was not provided, we download and add annotation from the same version used to pre-process the data according to their documentation to get gene symbols.
+
+```{r}
+samp_annot$data_processing.2[1] #Gencode 26, ~ Ensembl 91
+library(biomaRt)
+ensembl <- useEnsembl(biomart = "genes", 
+                      dataset = "hsapiens_gene_ensembl", 
+                      version = 91)
+# ensembl <- useDataset(ensembl, "genes")
+gene_annot <- getBM(attributes = c("ensembl_gene_id_version", "hgnc_symbol"),
+                    filters = "ensembl_gene_id_version",
+                    values = rownames(gexp),
+                    ensembl)
+gene_annot <- gene_annot %>%
+    group_by(hgnc_symbol) %>%
+    slice(1)
+
+gexp <- gexp[gene_annot$ensembl_gene_id_version,]
+rownames(gexp) <- gene_annot$hgnc_symbol
+gexp <- as.matrix(gexp)
+
+gexp[1:5,1:5]
+```
+
+### Run deconverse
+
+Now we can run `deconverse` on the bulk PBMC dataset with symbol identifiers from the reference we previously calculated.
+
+**Note:** **the `pbmc_bench` is not necessary for any of these steps**, it only serves to benchmark the different methods.
+
+```{r message=FALSE, warning=FALSE, resukts='hide'}
+deconv_res <- deconvolute_all(gexp, pbmc_ref, methods = c("dwls", "svr", "ols",
+                                                          "autogenes", "bisque", "svr"))
+```
+
+### Compare results
+
+Now we cal compare the results at the two levels of hierarchy.
+
+```{r}
+l1_results <- lapply(deconv_res, "[[", "l1") %>% bind_rows()
+l2_results <- lapply(deconv_res, "[[", "l2") %>% bind_rows()
+```
+
+```{r fig.height=3, fig.width=4, warning=FALSE}
+frac_names <- colnames(l1_results) %>% str_subset("^frac")
+
+all_frac_mat <- lapply(frac_names, function(frac) {
+    cell_type <- str_remove(frac, "^frac_")
+    l1_results %>%
+    pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
+        mutate(sample = paste0(sample, "_", cell_type)) %>%
+    as.data.frame()
+}) %>%
+    bind_rows() %>%
+    column_to_rownames("sample")
+
+ggcorrplot::ggcorrplot(cor(all_frac_mat), hc.order = TRUE)
+```
+
+```{r fig.height=3, fig.width=4}
+frac_names <- colnames(l2_results) %>% str_subset("^frac")
+
+all_frac_mat_l2 <- lapply(frac_names, function(frac) {
+    cell_type <- str_remove(frac, "^frac_")
+    l2_results %>%
+        pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
+        mutate(sample = paste0(sample, "_", cell_type)) %>%
+        as.data.frame()
+}) %>%
+    bind_rows() %>%
+    column_to_rownames("sample")
+
+ggcorrplot::ggcorrplot(cor(all_frac_mat_l2, use = "pair"), hc.order = TRUE)
+```
+
+We see that there is a much higher correlation between methods at the highest level of annotation, as expected.
+
+### Check sample deconvolution by a method
+
+We can verify the results of deconvolution by plotting the proportions:
+
+```{r fig.width=6, fig.height=6.5}
+pivot_dwls_l1 <- l1_results %>%
+    filter(method == "DWLS") %>%
+    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
+    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "Monocytic_lineage", "TNK")),
+           level = "l1")
+
+pivot_dwls_l2 <- l2_results %>%
+    filter(method == "DWLS") %>%
+    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
+    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "CD14+ Mono", "DC",
+                                                                "FCGR3A+ Mono", "CD8 T",
+                                                                "Memory CD4 T", "Naive CD4 T",
+                                                                "NK")),
+           level = "l2")
+
+pop_order <- pivot_dwls_l1 %>% filter(pop == "TNK") %>% arrange(frac) %>% pull(sample)
+
+l1_plt <- pivot_dwls_l1 %>%
+    mutate(sample = factor(sample, levels = pop_order)) %>%
+    ggplot(aes(sample, frac, fill = pop)) +
+    geom_col(color = "black", size = 0.2) +
+    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
+    ggheatmapper::theme_scatter() +
+    labs(title = "l1", y = "fraction", fill = "population") +
+    theme(axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x = element_blank())
+
+l2_plt <- pivot_dwls_l2 %>%
+    mutate(sample = factor(sample, levels = pop_order)) %>%
+    ggplot(aes(sample, frac, fill = pop)) +
+    geom_col(color = "black", size = 0.2) +
+    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
+    ggheatmapper::theme_scatter() +
+    labs(title = "l2", y = "fraction", fill = "population") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+l1_plt / l2_plt
+```

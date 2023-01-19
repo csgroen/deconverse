@@ -3,7 +3,7 @@
 
 ## `deconverse`: bulk RNA-seq deconvolution benchmark using single-cell reference profiles <img src="man/figures/logo.png" align="right" width="120"/>
 
-[![](https://img.shields.io/badge/devel%20version-0.1.5-blue.svg)](https://github.com/csgroen/deconverse)
+[![](https://img.shields.io/badge/devel%20version-0.1.6-blue.svg)](https://github.com/csgroen/deconverse)
 [![](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![](https://app.codecov.io/gh/google/benchmark/branch/master/graph/badge.svg)](https://app.codecov.io/gh/google/benchmark)
 [![](https://img.shields.io/github/last-commit/csgroen/deconverse.svg)](https://github.com/csgroen/deconverse/commits/master)
@@ -32,7 +32,7 @@ library(deconverse)
 install_cibersortx()
 ```
 
-### Usage
+## Usage
 
-[Usage example
-(v1)](https://drive.google.com/file/d/1ahly_DeekNbGTL9zO8vUgP-FvnMvJEnF/view?usp=sharing)
+[See the PBMC tutorial to get
+started](http://csgroen.github.io/deconverse/articles/intro_pbmc.html).

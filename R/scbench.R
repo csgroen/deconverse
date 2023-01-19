@@ -527,31 +527,31 @@ deconvolute.matrix <- function(bulk_data, scref,
         if(method == "cibersortx") {
             message("Running CIBERSORTx...")
             assert(!is.null(ref$cached_results[["cibersortx"]]))
-            deconv_res <- cibersortx_deconvolute(data, scref, cache_path = cache_path, ...)
+            deconv_res <- cibersortx_deconvolute(bulk_data, ref, cache_path = ".", ...)
         } else if (method == "music") {
             message("Running MuSiC...")
-            deconv_res <- music_deconvolute(data, ref, ...)
+            deconv_res <- music_deconvolute(bulk_data, ref, ...)
         } else if (method == "dwls") {
             message("Running DWLS...")
-            assert(!is.null(scref$cached_results[["dwls"]]))
-            deconv_res <- dwls_deconvolute(data, ref, ...)
+            assert(!is.null(ref$cached_results[["dwls"]]))
+            deconv_res <- dwls_deconvolute(bulk_data, ref, ...)
         } else if(method == "ols") {
-            assert(!is.null(scref$cached_results[["dwls"]]))
+            assert(!is.null(ref$cached_results[["dwls"]]))
             message("Running OLS using the DWLS signature matrix...")
-            deconv_res <- ols_deconvolute(data, ref, ...)
+            deconv_res <- ols_deconvolute(bulk_data, ref, ...)
         } else if(method == "svr") {
-            assert(!is.null(scref$cached_results[["dwls"]]))
+            assert(!is.null(ref$cached_results[["dwls"]]))
             message("Running SVR using the DWLS signature matrix...")
-            deconv_res <- svr_deconvolute(data, ref, ...)
+            deconv_res <- svr_deconvolute(bulk_data, ref, ...)
         } else if(method == "bayesprism") {
             message("Running BayesPrism...")
-            deconv_res <- bayesprism_deconvolute(data, ref, cache_path = cache_path, ...)
+            deconv_res <- bayesprism_deconvolute(bulk_data, ref, cache_path = ".", ...)
         } else if(method == "bisque") {
             message("Running Bisque...")
-            deconv_res <- bisque_deconvolute(data, ref)
+            deconv_res <- bisque_deconvolute(bulk_data, ref)
         } else if(method == "autogenes") {
             message("Running AutoGeneS...")
-            deconv_res <- autogenes_deconvolute(data, ref, ...)
+            deconv_res <- autogenes_deconvolute(bulk_data, ref, ...)
         }
         all_results[[level]] <- deconv_res
     }
@@ -603,6 +603,7 @@ deconvolute_all.scbench <- function(scbench,
     for(type in types) {
         message("========= Deconvoluting pseudobulks for ", type, " analysis ==========")
         for(method in methods) {
+            message("----------------> Using ", method, "...")
             if(method == "cibersortx") {
                 scbench <- deconvolute(scbench, scref, method = method, type = type, ...)
             } else {
@@ -634,18 +635,16 @@ deconvolute_all.matrix <- function(bulk_data,
                                    methods = deconvolution_methods(),
                                    ...){
     #-- Error handling
-    assert(class(scref) == "screference")
+    assert(class(scref) %in% c("screference", "hscreference"))
     assert(all(methods %in% deconvolution_methods()))
 
-    #-- Get types
-    types <- names(scbench$pseudobulk_counts)
     #-- Run deconvolutions
     all_deconv_res <- list()
     for(method in methods) {
         if(method == "cibersortx") {
-            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method, type = type, ...)
+            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method, ...)
         } else {
-            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method, type = type)
+            all_deconv_res[[method]] <- deconvolute(bulk_data, scref, method = method)
         }
     }
     return(all_deconv_res)

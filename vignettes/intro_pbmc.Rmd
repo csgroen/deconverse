@@ -79,7 +79,7 @@ pbmc_test <- pbmc[,test_ids]
 
 ## `screference`: Build single-cell reference from train data
 
-Now, we're ready to build the reference as an `hscreference` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
+Now, we're ready to build the reference as an `hscrefehttps://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.ziprence` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
 
 ```{r}
 pbmc_ref <- new_hscreference(pbmc_train,
@@ -94,7 +94,7 @@ Once the object is created, it can be used to compute a reference for different 
 To run this example much faster, download the cached results here:
 
 ```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/GV9gQQ8g4qh/scref_cache.zip", "scref_cache.zip")
+download.file("https://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.zip", "scref_cache.zip")
 unzip("scref_cache.zip")
 file.remove("scref_cache.zip")
 ```
@@ -174,11 +174,11 @@ pbmc_bounds <- list(
 Now we have the information we need to create our benchmarking set. Variables are very similar to creating an `screference`, with the exception of `pop_bounds`, which we have explained above.
 
 ```{r}
-pbmc_bench <- new_scbench(pbmc_test, pop_bounds = pbmc_bounds, 
-                          annot_ids = c("Cell_major_identities",
-                                        "Cell_minor_identities"), 
-                          project_name = "pbmc_example", 
-                          batch_id = "orig.ident")
+pbmc_bench <- new_scbench(pbmc_test, pop_bounds = pbmc_bounds,
+                         annot_ids = c("Cell_major_identities",
+                                       "Cell_minor_identities"),
+                         project_name = "pbmc_example",
+                         batch_id = "orig.ident")
 pbmc_bench
 ```
 
@@ -210,7 +210,7 @@ Then, we can generate pseudobulks for these mixtures by mixing 100 random cells 
 As for the screference, the next steps will go a lot faster by using cached results:
 
 ```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/F7oxfkXO5aq/scbench_cache.zip", "scbench_cache.zip")
+download.file("https://xfer.curie.fr/get/nil/WySrQJWAGJw/scbench_cache.zip", "scbench_cache.zip")
 unzip("scbench_cache.zip")
 file.remove("scbench_cache.zip")
 ```
@@ -254,7 +254,7 @@ By default, plots will show the benchmark on finest grained annotation available
 plt_cors_scatter(pbmc_bench, method = "dwls", level = "l1")
 ```
 
-#### Comparison of methods
+####  Comparison of methods
 
 There are also plots available to compare performance on the same data from different methods. The two main heatmaps compare correlation between pseudobulk mixture proportions and deconvoluted fractions by population, or the root mean squared error (RMSE) from predicted fraction and real fraction.
 

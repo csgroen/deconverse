@@ -298,22 +298,22 @@ pseudobulks <- function(scbench,
                                       ncores = ncores, ncells = ncells_run,
                                       by_batch = by_batch)
             scbench[["mixtures"]][[type]][[level]] <- pb_res$props
-
+            scbench[["pseudobulk_counts"]][["population"]] <- pb_res$pseudobulk
             if(level != "l1") {
                 scbench$pop_hierarchy
                 finer_lvl <- str_remove(level, "l") %>% as.numeric()
                 for(i in (finer_lvl-1):1) {
                     coarser_lvl <- paste0("l", i)
                     joins <- split(scbench$pop_hierarchy[[finer_lvl]], scbench$pop_hierarchy[[coarser_lvl]])
+                    joins <- lapply(joins, as.character)
                     props_coarser <- sapply(joins, function(pops2join) {
                         rowSums(as.matrix(pb_res$props[,pops2join]))
                     })
                     rownames(props_coarser) <- rownames(pb_res$props)
                     scbench[["mixtures"]][[type]][[coarser_lvl]] <- props_coarser
                 }
-                scbench[["pseudobulk_counts"]][["population"]] <- pb_res$pseudobulk
-                rm(pb_res)
             }
+            rm(pb_res)
         } else {
             multi_pb_res <- lapply(levels, function(level) {
                 .get_pseudobulk(scbench, type,
@@ -555,8 +555,8 @@ deconvolute.matrix <- function(bulk_data, scref,
         }
         all_results[[level]] <- deconv_res
     }
-    if(length(all_results) == 1) {
-        return(unlist(all_results))
+    if(length(levels) == 1) {
+        return(all_results)
     } else {
         for(i in 2:length(levels)) {
             finer <- paste0("l", i); coarser <- paste0("l", i-1)
@@ -1233,7 +1233,7 @@ print.scbench <- function(x) {
                 select(-Freq)
             colnames(new_hierarch) <- c(coarser_lev, finer_lev)
             # Check splits
-            split_pops <- upper_pops[sapply(split(new_hierarch[,2], new_hierarch[,1]), length) > 1]
+            split_pops <- upper_pops[sapply(split(new_hierarch[,2], new_hierarch[,1])[upper_pops], length) > 1]
             split_pops <- paste0(finer_lev, "_", split_pops)
             assert(split_pops %in% names(bounds))
 

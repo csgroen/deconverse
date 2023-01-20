@@ -163,11 +163,12 @@ sets.</p>
 data<a class="anchor" aria-label="anchor" href="#screference-build-single-cell-reference-from-train-data"></a>
 </h2>
 <p>Now, we’re ready to build the reference as an
-<code>hscreference</code> object. We use
-<code><a href="../reference/new_hscreference.html">deconverse::new_hscreference</a></code> and give our Seurat object
-<code>pbmc_train</code>, the l1 and l2 annotation variables in order, a
-project name, and a batch_id variable which could correspond to patient
-in another context, but here is just the same value for all cells.</p>
+<code>hscrefehttps://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.ziprence</code>
+object. We use <code><a href="../reference/new_hscreference.html">deconverse::new_hscreference</a></code> and give our
+Seurat object <code>pbmc_train</code>, the l1 and l2 annotation
+variables in order, a project name, and a batch_id variable which could
+correspond to patient in another context, but here is just the same
+value for all cells.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_hscreference.html">new_hscreference</a></span><span class="op">(</span><span class="va">pbmc_train</span>,</span>
 <span>                annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>, <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
@@ -202,7 +203,7 @@ methods, use <code>deconvolution_methods</code>.</p>
 <p>To run this example much faster, download the cached results
 here:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://xfer.curie.fr/get/nil/GV9gQQ8g4qh/scref_cache.zip"</span>, <span class="st">"scref_cache.zip"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.zip"</span>, <span class="st">"scref_cache.zip"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html" class="external-link">unzip</a></span><span class="op">(</span><span class="st">"scref_cache.zip"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="st">"scref_cache.zip"</span><span class="op">)</span></span></code></pre></div>
 <p>And then compute the references (they will be grabbed from the
@@ -308,11 +309,11 @@ Variables are very similar to creating an <code>screference</code>, with
 the exception of <code>pop_bounds</code>, which we have explained
 above.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_scbench.html">new_scbench</a></span><span class="op">(</span><span class="va">pbmc_test</span>, pop_bounds <span class="op">=</span> <span class="va">pbmc_bounds</span>, </span>
-<span>                          annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>,</span>
-<span>                                        <span class="st">"Cell_minor_identities"</span><span class="op">)</span>, </span>
-<span>                          project_name <span class="op">=</span> <span class="st">"pbmc_example"</span>, </span>
-<span>                          batch_id <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_scbench.html">new_scbench</a></span><span class="op">(</span><span class="va">pbmc_test</span>, pop_bounds <span class="op">=</span> <span class="va">pbmc_bounds</span>,</span>
+<span>                         annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>,</span>
+<span>                                       <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
+<span>                         project_name <span class="op">=</span> <span class="st">"pbmc_example"</span>,</span>
+<span>                         batch_id <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Generating new `scbench` object...</span></span>
 <span><span class="co">#&gt; Joining, by = "l1"</span></span>
 <span><span class="va">pbmc_bench</span></span>
@@ -351,7 +352,7 @@ Finally, we can call the different methods to deconvolute.</p>
 <p>As for the screference, the next steps will go a lot faster by using
 cached results:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://xfer.curie.fr/get/nil/F7oxfkXO5aq/scbench_cache.zip"</span>, <span class="st">"scbench_cache.zip"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"https://xfer.curie.fr/get/nil/WySrQJWAGJw/scbench_cache.zip"</span>, <span class="st">"scbench_cache.zip"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html" class="external-link">unzip</a></span><span class="op">(</span><span class="st">"scbench_cache.zip"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="st">"scbench_cache.zip"</span><span class="op">)</span></span></code></pre></div>
 <p>Here, we’re demonstrating with 6 methods currently implemented. For a
@@ -399,7 +400,7 @@ level:</p>
 <p><img src="intro_pbmc_files/figure-html/unnamed-chunk-23-1.png" width="480"></p>
 </div>
 <div class="section level4">
-<h4 id="comparison-of-methods">Comparison of methods<a class="anchor" aria-label="anchor" href="#comparison-of-methods"></a>
+<h4 id="comparison-of-methods"> Comparison of methods<a class="anchor" aria-label="anchor" href="#comparison-of-methods"></a>
 </h4>
 <p>There are also plots available to compare performance on the same
 data from different methods. The two main heatmaps compare correlation
@@ -422,7 +423,8 @@ fraction and real fraction.</p>
 <p>Plots are also available for limit of detection (lower is better) and
 spillover RMSE (lower is better).</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_heatmap.html">plt_lod_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_heatmap.html">plt_lod_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span>
+<span><span class="co">#&gt; Warning: Removed 1 rows containing missing values (geom_text).</span></span></code></pre></div>
 <p><img src="intro_pbmc_files/figure-html/unnamed-chunk-26-1.png" width="576"></p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_spillover_heatmap.html">plt_spillover_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>

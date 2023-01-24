@@ -361,6 +361,7 @@ all_frac_mat <- lapply(frac_names, function(frac) {
     bind_rows() %>%
     column_to_rownames("sample")
 
+# install.packages("ggcorrplot")
 ggcorrplot::ggcorrplot(cor(all_frac_mat), hc.order = TRUE)
 ```
 

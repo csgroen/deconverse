@@ -182,6 +182,7 @@ mixtures_spillover <- function(scbench, step = 0.05) {
 #' @param prop_noise_sd a value for added noise to the different samples generated
 #' for each observation
 #'
+#' @import tidyverse
 #' @return an object of class `scbench`
 #' @export
 mixtures_lod <- function(scbench, max_prop = 0.2, step = 0.01) {
@@ -813,7 +814,8 @@ plt_cors_scatter <- function(scbench, method, level = NULL) {
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `cor_table`, a
 #' table summarizing results
-#'
+
+#' @import tidyverse
 #' @importFrom ggheatmapper get_hmPlot update_hmPlot
 #'
 #' @export
@@ -861,6 +863,7 @@ plt_cor_heatmap <- function(scbench, level = NULL) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
 #'
+#' @import tidyverse
 #' @importFrom ggheatmapper ggheatmap align_to_hm theme_sparse2
 #' @importFrom yardstick rmse_vec
 #' @export
@@ -1006,7 +1009,7 @@ plt_lod_scatter <- function(scbench, method, level = NULL) {
 #'
 #' @return a list, containing `heatmap`, a ggheatmap object, and `rmse_table`, a
 #' table summarizing results
-#'
+#' @import tidyverse
 #' @importFrom data.table rbindlist
 #' @export
 plt_spillover_heatmap <- function(scbench, level = NULL) {
@@ -1083,6 +1086,7 @@ plt_spillover_heatmap <- function(scbench, level = NULL) {
 #' @return a list, containing `heatmap`, a ggheatmap object, and `lod_table`, a
 #' table summarizing results
 #'
+#' @import tidyverse ggheatmapper
 #' @export
 plt_lod_heatmap <- function(scbench, level = NULL) {
     #-- Error handling

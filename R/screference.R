@@ -15,6 +15,7 @@
 #' downstream computation, but make the results less accurate.
 #' @param seed an integer representing a "seed", for reproducibility of sub-sampling.
 #'
+#' @import tidyverse
 #' @return an object of class `screference`
 #'
 #' @export
@@ -135,6 +136,7 @@ compute_reference.screference <- function(scref,
 #'
 #' @return an object of class `hscreference`
 #' @importFrom data.tree as.Node
+#' @import tidyverse
 #' @export
 new_hscreference <- function(
         seurat_obj,
@@ -228,6 +230,8 @@ new_hscreference <- function(
 #' parameters.
 #'
 #' @return an object of class `hscreference`
+#'
+#' @import tidyverse
 #'
 #' @export
 #' @rdname compute_reference

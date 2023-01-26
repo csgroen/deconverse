@@ -385,12 +385,24 @@ deconvolute.scbench <- function(scbench,
         #-- Error handling
         assert(scref$nlevels == scbench$nlevels)
         levels <- paste0("l", 1:scbench$nlevels)
-        same_populations <- sapply(1:scref$nlevels, function(lv) {
-            bench_pops <- unique(scbench$pop_hierarchy[[lv]])
-            all(bench_pops %in% intersect(bench_pops, unique(scref$hpop_table[[lv]])))
-        })
+        missing_pops <- list()
+        same_populations <- rep(0, length(levels))
+        for(lv in 1:scref$nlevels) {
+            bench_pops <- as.character(unique(scbench$pop_hierarchy[[lv]]))
+            ref_pops <- as.character(unique(scref$hpop_table[[lv]]))
+            missing_pops[[lv]] <- setdiff(ref_pops, bench_pops)
+            same_populations[lv] <- all(bench_pops %in% intersect(bench_pops, ref_pops))
+        }
+        #-- Checking for missing populations
         if(!all(same_populations)) {
-            stop("Populations in `scref` and `scbench` are not the same at all levels.")
+            stop("Not all populations in `scbench` are contained in the reference `scref`.")
+        }
+        for(i in 1:length(missing_pops)) {
+            lv_mp <- missing_pops[[i]]
+            lv <- paste0("l", i)
+            if(length(lv_mp) > 0) {
+                warning("Missing populations in ", lv, ": ", paste(lv_mp, collapse = ", "), "\n")
+            }
         }
     } else {
         if(scbench$nlevels > 1) {
@@ -466,6 +478,22 @@ deconvolute.scbench <- function(scbench,
             scbench[["deconvolution"]][[level]][[type]][[method]] <- deconv_res
         }
     }
+    lv_missing <- levels[sapply(missing_pops, length) > 0]
+    names(missing_pops) <- levels
+    if(length(lv_missing) > 0) {
+        warning("Handling missing populations in benchmark...\n")
+        for(lv in lv_missing) {
+            to_remove <- paste0("frac_", missing_pops[[lv]])
+            if(type == "population") {
+                scbench[["deconvolution"]][[lv]][["complete_deconv"]][[method]] <-
+                    scbench[["deconvolution"]][[lv]][[type]][[method]]
+            }
+            scbench[["deconvolution"]][[lv]][[type]][[method]] <-
+                scbench[["deconvolution"]][[lv]][[type]][[method]] %>%
+                select(- {{to_remove}})
+        }
+    }
+
     if(length(levels) > 1 & type == "population") {
         for(i in 2:length(levels)) {
             finer <- paste0("l", i); coarser <- paste0("l", i-1)

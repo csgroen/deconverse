@@ -3,12 +3,11 @@
 
 ## `deconverse`: bulk RNA-seq deconvolution benchmark using single-cell reference profiles <img src="man/figures/logo.png" align="right" width="120"/>
 
-[![](https://img.shields.io/badge/devel%20version-0.1.6-blue.svg)](https://github.com/csgroen/deconverse)
+[![](https://img.shields.io/badge/devel%20version-0.2.0-blue.svg)](https://github.com/csgroen/deconverse)
 [![](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![](https://app.codecov.io/gh/google/benchmark/branch/master/graph/badge.svg)](https://app.codecov.io/gh/google/benchmark)
 [![](https://img.shields.io/github/last-commit/csgroen/deconverse.svg)](https://github.com/csgroen/deconverse/commits/master)
 
-**Note**: This package is still very immature, APIs are not yet well
+**Note**: This package is still immature, APIs are not yet well
 documented and may change
 
 ### Installation

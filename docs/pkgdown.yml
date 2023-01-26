@@ -3,7 +3,8 @@ pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   intro_pbmc: intro_pbmc.html
-last_built: 2023-01-20T17:36Z
+  pdac_tutorial: pdac_tutorial.html
+last_built: 2023-01-26T15:46Z
 urls:
   reference: https://csgroen.github.io/deconverse/reference
   article: https://csgroen.github.io/deconverse/articles

@@ -11,12 +11,11 @@ require(badger)
 cat(
 	badge_devel("csgroen/deconverse", "blue"),
 	badge_lifecycle("experimental"),
-	badge_codecov("google/benchmark"),
 	badge_last_commit("csgroen/deconverse")
 )
 ```
 
-**Note**: This package is still very immature, APIs are not yet well documented and may change
+**Note**: This package is still immature, APIs are not yet well documented and may change
 
 ### Installation
 

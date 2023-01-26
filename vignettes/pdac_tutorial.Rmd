@@ -1,0 +1,297 @@
+---
+title: "Benchmarking example with pancreatic cancer data"
+author: "Clarice S. Groeneveld"
+output: 
+    rmarkdown::html_document:
+        toc: true
+        toc_float: true
+        toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{pdac_tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Context
+
+```{r}
+library(deconverse)
+```
+
+We'll use example data from pancreatic cancer and multiple datasets, annotated with more or less the same categories to challenge some of the methods implemented in the `deconverse` package.
+
+## Example reference dataset: CRA001160
+
+We chose two pancreatic adenocarcinoma single-cell datasets to be reference and test dataset examples. CRA001160, the biggest dataset, will be used to train the references.
+
+### Download
+
+First, we need to download the expression data and cell metadata from the repository.
+
+```{r}
+download_file <- function(link, fname) {
+  if(!file.exists(fname)) {
+    old_timeout <- getOption('timeout')
+    options(timeout=1e6)
+    message("Downloading data...")
+    download.file(link, fname)
+    options(timeout=old_timeout)
+  } else {
+    message("File ", fname, " found, skipping download...")
+  }
+}
+
+# Source: http://tisch.comp-genomics.org/gallery/?cancer=PAAD&celltype=&species=
+dir.create("data", showWarnings = FALSE)
+download_file("https://biostorage.s3.ap-northeast-2.amazonaws.com/TISCH_2022/PAAD_CRA001160/PAAD_CRA001160_expression.h5",
+              "data/PAAD_CRA001160_expression.h5")
+download_file("http://tisch.comp-genomics.org/static/data/PAAD_CRA001160/PAAD_CRA001160_CellMetainfo_table.tsv",
+              "data/PAAD_CRA001160_CellMetainfo_table.tsv")
+```
+
+### Read data
+
+Now, we can read these objects into R and create a Seurat object. The cells in this dataset have already been through quality control steps.
+
+```{r}
+library(Seurat)
+library(tidyverse)
+sc_paad_mat <- Read10X_h5("data/PAAD_CRA001160_expression.h5", use.names = TRUE, unique.features = TRUE)
+sc_paad_meta <- read_tsv("data/PAAD_CRA001160_CellMetainfo_table.tsv")
+```
+
+```{r}
+sc_paad_meta <- sc_paad_meta %>%
+  rename_with(~ str_replace_all(., " |\\-|\\_", ".") %>% str_remove_all("\\(|\\)")) %>%
+  as.data.frame() %>%
+  column_to_rownames("Cell") %>%
+  .[colnames(sc_paad_mat),]
+```
+
+```{r}
+so_paad <- CreateSeuratObject(counts = sc_paad_mat, project = "PAAD", 
+                              meta.data = sc_paad_meta)
+so_paad <- NormalizeData(so_paad)
+```
+
+```{r}
+rm(sc_paad_mat); gc()
+```
+
+### Visualize annotations
+
+We can visualize the provided annotations using the Seurat object. Cell identities are provided at 3 levels of hierarchy: `"Celltype.malignancy"`, `"Celltype.major.lineage"` and `"Celltype.minor.lineage"` .
+
+```{r fig.width=12, fig.height=4}
+library(patchwork)
+plt_paad_umap <- function(so, color_var) {
+  ggplot(so@meta.data, aes(UMAP.1, UMAP.2, color = !! sym(color_var))) +
+  geom_point(size = 0.1) +
+  theme_linedraw() +
+  labs(title = color_var)
+}
+annot1 <- plt_paad_umap(so_paad, "Celltype.malignancy") + scale_color_brewer(type = "qual")
+annot2 <- plt_paad_umap(so_paad, "Celltype.major.lineage")
+annot3 <- plt_paad_umap(so_paad, "Celltype.minor.lineage")
+
+((annot1 | annot2 | annot3) & guides(color = guide_legend(override.aes = list(size = 3), ncol = 3))) + plot_layout(guides = "collect")
+```
+
+We can visualize how the cell annotations map between different levels of hierarchy:
+
+```{r}
+with(so_paad@meta.data, table(Celltype.malignancy, Celltype.major.lineage))
+```
+
+```{r}
+with(so_paad@meta.data, table(Celltype.major.lineage, Celltype.minor.lineage))
+```
+
+We also fix names might pose problems in downstream analyses, either because they differ between datasets (`CD8Tex` instead of just `CD8T`) or because they contain special characters that can generate problems in formulas (like `Mono/Macro`).
+
+```{r}
+so_paad@meta.data$Celltype.major.lineage[so_paad@meta.data$Celltype.major.lineage == "Mono/Macro"] <- "Mono_Macro"
+so_paad@meta.data$Celltype.major.lineage[so_paad@meta.data$Celltype.major.lineage == "CD8Tex"] <- "CD8T"
+so_paad@meta.data$Celltype.minor.lineage[so_paad@meta.data$Celltype.minor.lineage == "CD8Tex"] <- "CD8T"
+```
+
+### Create `hscreference` with `deconverse`
+
+```{r}
+paad_ref <- new_hscreference(so_paad, 
+                               project_name = "paad_example",
+                               annot_ids = c("Celltype.malignancy", "Celltype.major.lineage", "Celltype.minor.lineage"),
+                               batch_id = "Patient",
+                               seed = 0)
+```
+
+### Compute references for different methods
+
+To speed up the pipeline, we can download the cached results:
+
+```{r results='hide'}
+download.file("https://xfer.curie.fr/get/nil/m7Xl4ygpjWv/scref_cache.zip", "scref_cache.zip")
+unzip("scref_cache.zip")
+file.remove("scref_cache.zip")
+```
+
+
+```{r}
+paad_ref <- paad_ref %>%
+  compute_reference("dwls") %>%
+  compute_reference("autogenes")
+```
+
+```{r}
+paad_ref
+```
+
+## Example benchmarking dataset: GSE154778
+
+We'll use a different single-cell dataset with similar annotations to benchmark the dataset. This dataset doesn't feature all the cell types in the reference, so the benchmark will be limited to cell types present in the test dataset. However, because the reference also contains other cell types, we will also get to see how the methods perform when there are confounding cell types in the reference.
+
+**We're still working on:** (1) adding confounding cell types to the mixture that are not present in the reference and then assessing the behavior of different methods; (2) effectively evaluating the performance of methods when there are more cell types in the reference than in the benchmarking mixture.
+
+Case (2) is allowed by scbench currently, but case (1) is not i.e. all cells types in the benchmark must be in the reference.
+
+### Download
+
+```{r}
+download_file("https://biostorage.s3.ap-northeast-2.amazonaws.com/TISCH_2022/PAAD_GSE141017/PAAD_GSE141017_expression.h5",
+              "data/PAAD_GSE141017_expression.h5")
+download_file("http://tisch.comp-genomics.org/static/data/PAAD_GSE141017/PAAD_GSE141017_CellMetainfo_table.tsv",
+              "data/PAAD_GSE141017_CellMetainfo_table.tsv")
+```
+
+### Read data
+
+```{r}
+library(Seurat)
+library(tidyverse)
+sc_paad_mat2 <- Read10X_h5("data/PAAD_GSE141017_expression.h5", use.names = TRUE, unique.features = TRUE)
+sc_paad_meta2 <- read_tsv("data/PAAD_GSE141017_CellMetainfo_table.tsv")
+```
+
+```{r}
+sc_paad_meta2 <- sc_paad_meta2 %>%
+  rename_with(~ str_replace_all(., " |\\-|\\_", ".") %>% str_remove_all("\\(|\\)")) %>%
+  as.data.frame() %>%
+  column_to_rownames("Cell") %>%
+  .[colnames(sc_paad_mat2),]
+```
+
+```{r}
+so_paad2 <- CreateSeuratObject(counts = sc_paad_mat2, project = "PAAD_bench", 
+                              meta.data = sc_paad_meta2)
+so_paad2 <- NormalizeData(so_paad2)
+```
+
+### Visualize populations
+
+```{r fig.width=12, fig.height=3}
+library(patchwork)
+annot1 <- plt_paad_umap(so_paad2, "Celltype.malignancy") + scale_color_brewer(type = "qual")
+annot2 <- plt_paad_umap(so_paad2, "Celltype.major.lineage")
+annot3 <- plt_paad_umap(so_paad2, "Celltype.minor.lineage")
+
+((annot1 | annot2 | annot3) & guides(color = guide_legend(override.aes = list(size = 3), ncol = 3))) + plot_layout(guides = "collect")
+```
+
+We see fewer populations in this test set than in the reference dataset. Some have slightly different names such as "CD8Tcm", so we'll fix this:
+
+```{r}
+so_paad2@meta.data$Celltype.minor.lineage[so_paad2@meta.data$Celltype.minor.lineage == "CD8Tcm"] <- "CD8T"
+so_paad2@meta.data$Celltype.major.lineage[so_paad2@meta.data$Celltype.major.lineage == "Mono/Macro"] <- "Mono_Macro"
+```
+
+### Create `scbench`
+
+As PDACs are tumors with low cellularity, we generate mixtures with varying levels of cellularity (10-60%) and high stromal content.
+
+```{r}
+paad_bounds <- list(
+  l1 = data.frame(
+    population = c("Malignant cells", "Immune cells", "Stromal cells"),
+    lower = c(0.1, 0, 0.4),
+    upper = c(0.6, 0.2, 0.9)
+  ),
+  `l2_Immune cells` = data.frame(
+    population = c("CD8T", "Mono_Macro"),
+    lower = c(0.3, 0.3),
+    upper = c(0.8, 0.7)
+  ),
+  `l3_Mono_Macro` = data.frame(
+    population = c("M1", "Monocyte"),
+    lower = c(0.3, 0.3),
+    upper = c(0.7, 0.7)
+  )
+)
+```
+
+```{r}
+paad_bench <- new_scbench(so_paad2, paad_bounds,
+                          annot_ids = c("Celltype.malignancy", "Celltype.major.lineage", "Celltype.minor.lineage"),
+                          project_name = "paad_example",
+                          batch_id = "Patient")
+```
+
+### Benchmark
+
+To speed up computation, we can download the cache:
+```{r results='hide'}
+download.file("https://xfer.curie.fr/get/nil/UmcJ4yR5cfv/scbench_cache.zip", "scbench_cache.zip")
+unzip("scbench_cache.zip")
+file.remove("scbench_cache.zip")
+```
+
+
+```{r}
+paad_bench <- paad_bench %>%
+  mixtures_population(nsamps = 500, seed = 0) %>%
+  mixtures_spillover() %>%
+  mixtures_lod()
+
+paad_bench <- paad_bench %>%
+  pseudobulks(ncells = 1000, seed = 0, ncores = 8, by_batch = FALSE) %>%
+    deconvolute_all(paad_ref, methods = c("dwls", "svr", "ols", "autogenes"))
+```
+
+### Plot results
+
+```{r fig.width=4.5, fig.height=3}
+plt_cor_heatmap(paad_bench)$heatmap
+```
+
+AutoGeneS is the only method capable of detecting M1 macrophages. As SVR, DWLS and OLS use the same reference, this problem probably comes from the inability of DWLS to find specific M1 markers.
+
+```{r fig.width=5, fig.height=3}
+plt_cors_scatter(paad_bench, method = "svr")
+```
+
+In spite of that, SVR still has the overall smallest estimation error:
+
+```{r fig.width=5.5, fig.height=2.5}
+plt_rmse_heatmap(paad_bench)$heatmap
+```
+
+DWLS has the best spillover performance and only fails significantly when assessing M1 vs Monocytes.
+
+```{r fig.width=5, fig.height=3}
+plt_spillover_heatmap(paad_bench)$heatmap
+```
+
+SVR has the lowest limits of detection, with the exception of M1 vs Monocytes, where it fails.
+
+```{r fig.width=5, fig.height=3}
+plt_lod_heatmap(paad_bench)$heatmap
+```
+
+If we consider it at the l2 level (where Monocytes and Macrophages are grouped together), AutoGeneS has the lowest limits of detection
+
+```{r fig.width=5, fig.height=3}
+plt_lod_heatmap(paad_bench, level = "l2")$heatmap
+```

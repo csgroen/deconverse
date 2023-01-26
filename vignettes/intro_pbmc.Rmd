@@ -1,5 +1,5 @@
 ---
-title: "`deconverse` introduction: full explained pipeline with PBMCs"
+title: "Introduction: full explained deconverse pipeline with PBMCs"
 author: "Clarice S. Groeneveld"
 output: 
     rmarkdown::html_document:

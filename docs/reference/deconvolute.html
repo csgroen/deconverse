@@ -59,6 +59,7 @@ Deconvolute bulk RNA-seq matrix using a chosen method"><meta property="og:image"
 <span>  method <span class="op">=</span> <span class="fu">deconvolution_methods</span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"population"</span>, <span class="st">"spillover"</span>, <span class="st">"lod"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
 <span>  pseudobulk_norm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"rpm"</span>, <span class="st">"none"</span>, <span class="st">"proportional_fitting"</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>,</span>
+<span>  correct_finer <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -67,7 +68,8 @@ Deconvolute bulk RNA-seq matrix using a chosen method"><meta property="og:image"
 <span>  <span class="va">bulk_data</span>,</span>
 <span>  <span class="va">scref</span>,</span>
 <span>  method <span class="op">=</span> <span class="fu">deconvolution_methods</span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
-<span>  bulk_norm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"rpm"</span>, <span class="st">"none"</span>, <span class="st">"proportional_fitting"</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>,</span>
+<span>  bulk_norm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"rpm"</span>, <span class="st">"proportional_fitting"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>  correct_finer <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -99,6 +101,11 @@ methods, consult `deconvolution_methods()`</p></dd>
 for using the mean library size of the pseudobulk data to normalize.</p></dd>
 
 
+<dt>correct_finer</dt>
+<dd><p>normalize the resulting fractions from finer-grained
+annotation using coarser-grained results</p></dd>
+
+
 <dt>...</dt>
 <dd><p>other parameters, passed to the method wrapper, enables the user
 to change the method parameters. See: `deconvolute_method` where `method`
@@ -113,7 +120,7 @@ is the method name in lowercase for method-specific parameters</p></dd>
 <dd><p>the normalization to be applied in the bulk data. One of:
 `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 for using the mean library size of the pseudobulk data to normalize. If already
-normalized, make sure to choose `"none"`.</p></dd>
+normalized, make sure to choose `"none"` (default)</p></dd>
 
 </dl></div>
     <div class="section level2">

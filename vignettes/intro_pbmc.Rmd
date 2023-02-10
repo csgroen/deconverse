@@ -79,7 +79,7 @@ pbmc_test <- pbmc[,test_ids]
 
 ## `screference`: Build single-cell reference from train data
 
-Now, we're ready to build the reference as an `hscrefehttps://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.ziprence` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
+Now, we're ready to build the reference as an `hscreference` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
 
 ```{r}
 pbmc_ref <- new_hscreference(pbmc_train,
@@ -89,19 +89,24 @@ pbmc_ref <- new_hscreference(pbmc_train,
 pbmc_ref
 ```
 
-Once the object is created, it can be used to compute a reference for different methods. We'll compute references for DWLS (which is also used for OLS and SVR), svr and AutoGeneS. For all available deconvolution methods, use `deconvolution_methods`.
+Once the object is created, it can be used to compute a reference for different methods. We'll compute references for DWLS (which is also used for OLS and SVR), svr and AutoGeneS. For all available deconvolution methods, use `deconvolution_methods()`.
 
-To run this example much faster, download the cached results here:
-
-```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.zip", "scref_cache.zip")
-unzip("scref_cache.zip")
-file.remove("scref_cache.zip")
+```{r results='hide', echo=FALSE, eval=FALSE}
+# To run this example much faster, download the cached results here:
+# download.file("https://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.zip", "scref_cache.zip")
+# unzip("scref_cache.zip")
+# file.remove("scref_cache.zip")
 ```
 
 And then compute the references (they will be grabbed from the cache):
 
 ```{r results='hide'}
+# Optional: parallelize with Seurat
+library(future)
+options(future.globals.maxSize= 4000*1024^2)
+plan("multicore", workers = 4)
+
+# Compute references
 pbmc_ref <- pbmc_ref |>
     compute_reference("dwls") |>
     compute_reference("autogenes")
@@ -174,9 +179,10 @@ pbmc_bounds <- list(
 Now we have the information we need to create our benchmarking set. Variables are very similar to creating an `screference`, with the exception of `pop_bounds`, which we have explained above.
 
 ```{r}
-pbmc_bench <- new_scbench(pbmc_test, pop_bounds = pbmc_bounds,
+pbmc_bench <- new_scbench(pbmc_test, 
                          annot_ids = c("Cell_major_identities",
                                        "Cell_minor_identities"),
+                         pop_bounds = pbmc_bounds,
                          project_name = "pbmc_example",
                          batch_id = "orig.ident")
 pbmc_bench
@@ -209,19 +215,21 @@ Then, we can generate pseudobulks for these mixtures by mixing 100 random cells 
 
 As for the screference, the next steps will go a lot faster by using cached results:
 
-```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/WySrQJWAGJw/scbench_cache.zip", "scbench_cache.zip")
-unzip("scbench_cache.zip")
-file.remove("scbench_cache.zip")
+```{r results='hide', echo=FALSE, eval=FALSE}
+# To run this example much faster, download the cached results here:
+# download.file("https://xfer.curie.fr/get/nil/WySrQJWAGJw/scbench_cache.zip", "scbench_cache.zip")
+# unzip("scbench_cache.zip")
+# file.remove("scbench_cache.zip")
 ```
 
 Here, we're demonstrating with 6 methods currently implemented. For a full list, see `deconvolution_methods()`.
 
 ```{r results='hide', message=FALSE, warning=FALSE}
 pbmc_bench <- pbmc_bench |> 
-    pseudobulks(ncells = 100) |>
-    deconvolute_all(pbmc_ref, methods = c("dwls", "svr", "ols",
-                                          "autogenes", "bisque"))
+    pseudobulks(ncells = 1000) |>
+    deconvolute_all(pbmc_ref, 
+                    methods = c("dwls", "svr", "ols",
+                                "autogenes", "bisque"))
 ```
 
 ### Benchmarking results
@@ -232,7 +240,7 @@ deconverse implements many functions to produce many benchmarking plots, either 
 
 Here, we generate all evaluation plots for results coming from the dampened weighted least squares (`dwls`). `plt_cors_scatter` plots the correlations between deconvoluted pseudobulk portions found by the method and the true fractions.
 
-```{r fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+```{r fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
 plt_cors_scatter(pbmc_bench, method = "dwls")
 ```
 

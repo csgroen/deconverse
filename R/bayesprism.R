@@ -113,12 +113,6 @@ bayesprism_deconvolute <- function(bulk_data,
     }
     if(file.exists(cache_fname)) {
         load(cache_fname)
-        # bp_tb_res <- get.fraction(bp_res, "final", "type") %>%
-        #     as.data.frame() %>%
-        #     rename_with(~ paste0("frac_", .)) %>%
-        #     rownames_to_column("sample") %>%
-        #     mutate(method = "BayesPrism") %>%
-        #     tibble()
         return(bp_tb_res)
     }
     #-- Checks
@@ -149,7 +143,7 @@ bayesprism_deconvolute <- function(bulk_data,
         mutate(method = "BayesPrism") %>%
         tibble()
 
-    if(cache_fname != "") save(bp_tb_res, file = cache_fname)
+    if(cache_fname != "") save(bp_tb_res, bp_res, file = cache_fname)
 
     return(bp_tb_res)
 }

@@ -2,7 +2,8 @@
 #' Generate `scbench` object
 #'
 #' @param ref_scrna a reference Seurat object
-#' @param pop_bounds list of population bounds, see example
+#' @param pop_bounds list of population bounds, see example. If `NULL`,
+#' bounds will be set to 0-1 for every population.
 #' @param annot_ids named vector with column names of annotations per level,
 #' e.g. `c("l1" = "annot1", "l2" = "annot2")`
 #' @param project_name a string indicating the project name, used for caching
@@ -15,12 +16,17 @@
 #'
 #' @export
 new_scbench <- function(ref_scrna,
-                        pop_bounds,
                         annot_ids,
+                        pop_bounds = NULL,
                         project_name = "project",
                         cache_path = "scbench_cache",
                         batch_id = NULL) {
     message("Generating new `scbench` object...")
+
+    #-- Create bounds if not given
+    if(is.null(pop_bounds)) {
+        pop_bounds <- get_bounds(ref_scrna, annot_ids)
+    }
     #-- Get number of levels
     levels <- str_remove(names(pop_bounds), "^l") %>% str_remove("_.*") %>% as.numeric()
     nl <- max(levels)
@@ -359,6 +365,8 @@ deconvolution_methods <- function() {
 #' @param pseudobulk_norm the normalization method for pseudobulk counts. One of:
 #' `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 #' for using the mean library size of the pseudobulk data to normalize.
+#' @param correct_finer normalize the resulting fractions from finer-grained
+#' annotation using coarser-grained results
 #' @param ... other parameters, passed to the method wrapper, enables the user
 #' to change the method parameters. See: `deconvolute_{method}` where `{method}`
 #' is the method name in lowercase for method-specific parameters
@@ -374,6 +382,7 @@ deconvolute.scbench <- function(scbench,
                         method = deconvolution_methods()[1],
                         type = c("population", "spillover", "lod")[1],
                         pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
+                        correct_finer = TRUE,
                         ...) {
     #-- Error handling
     # assert(class(scbench) == "scbench")
@@ -494,7 +503,7 @@ deconvolute.scbench <- function(scbench,
         }
     }
 
-    if(length(levels) > 1 & type == "population") {
+    if(length(levels) > 1 & type == "population" & correct_finer) {
         for(i in 2:length(levels)) {
             finer <- paste0("l", i); coarser <- paste0("l", i-1)
             finer_deconv <- scbench[["deconvolution"]][[finer]][["population"]][[method]]
@@ -524,7 +533,9 @@ deconvolute.scbench <- function(scbench,
 #' @param bulk_norm the normalization to be applied in the bulk data. One of:
 #' `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 #' for using the mean library size of the pseudobulk data to normalize. If already
-#' normalized, make sure to choose `"none"`.
+#' normalized, make sure to choose `"none"` (default)
+#' @param correct_finer normalize the resulting fractions from finer-grained
+#' annotation using coarser-grained results
 #' @param ... other parameters, passed to the method wrapper, enables the user
 #' to change the method parameters. See: `deconvolute_{method}` where `{method}`
 #' is the method name in lowercase for method-specific parameters
@@ -536,7 +547,8 @@ deconvolute.scbench <- function(scbench,
 #' @export
 deconvolute.matrix <- function(bulk_data, scref,
                                method = deconvolution_methods()[1],
-                               bulk_norm = c("rpm", "none", "proportional_fitting")[3],
+                               bulk_norm = c("none", "rpm", "proportional_fitting")[1],
+                               correct_finer = TRUE,
                                ...) {
     assert(class(scref) %in% c("screference", "hscreference"))
 
@@ -584,7 +596,7 @@ deconvolute.matrix <- function(bulk_data, scref,
         }
         all_results[[level]] <- deconv_res
     }
-    if(length(levels) == 1) {
+    if(length(levels) == 1 | !correct_finer) {
         return(all_results)
     } else {
         for(i in 2:length(levels)) {
@@ -819,14 +831,15 @@ plt_cors_scatter <- function(scbench, method, level = NULL) {
     plot_tb <-.get_bench_results(deconv_res, bench_tb)
 
     #-- Plot
-    plt_cor <- ggplot(plot_tb, aes(pred, truth)) +
+    plt_cor <- ggplot(plot_tb, aes(truth, pred)) +
         facet_wrap(~ population, scales = "free") +
         geom_hdr_points(probs = c(0.99,0.95,0.9,0.8,0.5,0.25,0.1), alpha = 0.8, size = 0.5) +
         geom_smooth(method = "lm", se = FALSE, color = "black", lty = "dotted", size = 0.5) +
         geom_abline(slope = 1, intercept = 0, color = "black", lty = "dashed", size = 0.5) +
+        annotate("text", x = Inf, y = -Inf, label = "y=x", size = 3) +
         scale_color_brewer() +
         stat_cor(size = 3, method = "spearman") +
-        labs(x = paste0("Fraction predicted by ", unique(deconv_res$method)), y = "True fraction") +
+        labs(y = paste0("Fraction predicted by ", unique(deconv_res$method)), x = "True fraction") +
         guides(color = 'none') +
         theme_scatter()
 
@@ -969,7 +982,7 @@ plt_spillover_scatter <- function(scbench, method, level = NULL) {
     plot_tb <- .get_spillover_results(deconv_res, spillover_tb)
 
     #-- Plot
-    plt <- ggplot(plot_tb, aes(pop1_estimate, pop1_truth)) +
+    plt <- ggplot(plot_tb, aes(pop1_truth, pop1_estimate)) +
         facet_grid(rows = vars(pop1), cols = vars(pop2)) +
         geom_point(color = "steelblue") +
         geom_smooth(method = "lm", se = FALSE, color = "black", lty = "dotted", size = 0.5) +
@@ -978,7 +991,7 @@ plt_spillover_scatter <- function(scbench, method, level = NULL) {
         scale_x_continuous(breaks = c(0, 0.5, 1)) +
         scale_y_continuous(breaks = c(0, 0.5, 1)) +
         stat_cor(size = 3, method = "pearson") +
-        labs(x = paste0("Population fraction predicted by ", unique(deconv_res$method)), y = "True population fraction") +
+        labs(y = paste0("Population fraction predicted by ", unique(deconv_res$method)), x = "True population fraction") +
         guides(color = 'none') +
         theme_scatter()
     plt <- .remove_lowerti(plt, length(levels(plot_tb$pop1)), length(levels(plot_tb$pop2)))
@@ -1013,17 +1026,18 @@ plt_lod_scatter <- function(scbench, method, level = NULL) {
         filter(truth == 0)
 
    plt <-
-        ggplot(lod_res$lod_tb, aes(est, truth)) +
+        ggplot(lod_res$lod_tb, aes(truth, est)) +
         facet_wrap(~ population) +
         geom_point(color = "steelblue") +
-        geom_violin(aes(x = est), data = blanks, width = step, alpha = 0) +
-        geom_segment(aes(x = blank_mean, xend = blank_mean, y = -step, yend = step),
+        geom_violin(aes(x = truth), data = blanks, width = step, alpha = 0) +
+        geom_segment(aes(y = blank_mean, yend = blank_mean, x = -step, xend = step),
                      data = lod_res$blank_metrics) +
         geom_abline(slope = 1, intercept = 0, color = "black", lty = "dashed", size = 0.5) +
-        labs(x = paste0("Fraction predicted by ", unique(deconv_res$method)), y = "True fraction") +
+        labs(y = paste0("Fraction predicted by ", unique(deconv_res$method)), x = "True fraction") +
         guides(color = 'none') +
-        geom_hline(aes(yintercept = truth), data = lod_res$lod_annot, lty = "dotted") +
-        geom_text(aes(x = 0.1, label = label), data = lod_res$lod_annot, size = 3, vjust = -0.3, hjust = 0.5) +
+        geom_hline(aes(yintercept = est), data = lod_res$lod_annot, lty = "dotted") +
+        geom_text(aes(x = 0.1, y = est, label = label),
+                  data = lod_res$lod_annot, size = 3, vjust = -0.3, hjust = 0.5) +
         theme_scatter()
 
     return(plt)
@@ -1187,6 +1201,40 @@ deconvolute_all <- function(x, ...) {
 }
 
 # Helpers ------------
+
+#' @export
+get_bounds <- function(ref_scrna, annot_ids) {
+    pops <- unique(ref_scrna@meta.data[,annot_ids[1]])
+    pop_bounds <- list(l1 = tibble(population = pops,
+                                   lower = rep(0, length(pops)),
+                                   upper = rep(0, length(pops))))
+    if(length(annot_ids) == 1) {
+        # Add other levels
+        annots <- ref_scrna@meta.data[,annot_ids]
+        colnames(annots) <- paste0("l", 1:length(annot_ids))
+        hpop_res <- .get_pop_hierarchy(annots)
+
+        for(i in 2:length(annot_ids)) {
+            lv <- paste0("l", i)
+            lv_coarser <- paste0("l", i-1)
+            nested_hpop <- nest(hpop_res$hpop_table, .by = {{lv_coarser}})
+            lvl_bounds <- nested_hpop %>%
+                as.list() %>%
+                .[["data"]] %>%
+                lapply(function(tb) {
+                    tb %>%
+                        rename(population = {{lv}}) %>%
+                        mutate(lower = 0,
+                               upper = 1)
+                })
+            names(lvl_bounds) <- paste0(lv, "_", nested_hpop$l1)
+            pop_bounds <- c(pop_bounds, lvl_bounds)
+        }
+    }
+    return(pop_bounds)
+}
+
+
 #' @importFrom R.utils filePath
 .scbench_cache_check <- function(method_cache) {
     method_fname <- filePath(method_cache, "deconv_res.RDS")
@@ -1482,7 +1530,7 @@ theme_sparse <- function (...)
 
                 }
             }) %>% reduce(c)
-            rowSums(scbench$ref_data[,sample_cells]@assays$RNA@counts)
+            rowSums(scbench$ref_data@assays$RNA@counts[, sample_cells])
         }, mc.cores = ncores)
         message("-- Joining matrix...")
     }

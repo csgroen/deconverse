@@ -66,7 +66,7 @@ autogenes_scref <- function(scref, ngen = 500, mode = "standard",
 
     #-- Pre-process
     scdata <- SetIdent(scdata, value = id_name)
-    scdata <- NormalizeData(scdata)
+    scdata <- NormalizeData(scdata, normalization.method = "RC")
     scdata <- FindVariableFeatures(scdata, ...)
 
     #-- Get centroids
@@ -121,6 +121,7 @@ autogenes_scref <- function(scref, ngen = 500, mode = "standard",
 #' See also: https://github.com/theislab/AutoGeneS
 #'
 #' @import tidyverse reticulate
+#' @export
 autogenes_deconvolute <- function(bulk_data, scref,
                                   model = c("nusvr", "nnls", "linear")[1]) {
     assert(class(scref) == "screference")

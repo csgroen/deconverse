@@ -131,12 +131,11 @@ paad_ref <- new_hscreference(so_paad,
 
 ### Compute references for different methods
 
-To speed up the pipeline, we can download the cached results:
-
-```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/m7Xl4ygpjWv/scref_cache.zip", "scref_cache.zip")
-unzip("scref_cache.zip")
-file.remove("scref_cache.zip")
+```{r results='hide', echo=FALSE, eval=FALSE}
+# To speed up the pipeline, we can download the cached results:
+# download.file("https://xfer.curie.fr/get/nil/m7Xl4ygpjWv/scref_cache.zip", "scref_cache.zip")
+# unzip("scref_cache.zip")
+# file.remove("scref_cache.zip")
 ```
 
 
@@ -233,19 +232,20 @@ paad_bounds <- list(
 ```
 
 ```{r}
-paad_bench <- new_scbench(so_paad2, paad_bounds,
+paad_bench <- new_scbench(so_paad2,
                           annot_ids = c("Celltype.malignancy", "Celltype.major.lineage", "Celltype.minor.lineage"),
+                          pop_bounds = paad_bounds,
                           project_name = "paad_example",
                           batch_id = "Patient")
 ```
 
 ### Benchmark
 
-To speed up computation, we can download the cache:
-```{r results='hide'}
-download.file("https://xfer.curie.fr/get/nil/UmcJ4yR5cfv/scbench_cache.zip", "scbench_cache.zip")
-unzip("scbench_cache.zip")
-file.remove("scbench_cache.zip")
+```{r results='hide', echo=FALSE, eval=FALSE}
+# To speed up computation, we can download the cache:
+# download.file("https://xfer.curie.fr/get/nil/UmcJ4yR5cfv/scbench_cache.zip", "scbench_cache.zip")
+# unzip("scbench_cache.zip")
+# file.remove("scbench_cache.zip")
 ```
 
 

@@ -188,34 +188,14 @@ new_hscreference <- function(
     #-- Get population hierarchy
     annots <- seurat_obj@meta.data[,annot_ids]
     colnames(annots) <- paste0("l", 1:n_lvl)
-    for(i in 1:(n_lvl-1)) {
-        l_coarser <- paste0("l", i)
-        l_finer <- paste0("l", i+1)
-
-        table <- table(annots[,l_coarser], annots[,l_finer]) %>%
-            as.data.frame() %>%
-            filter(Freq > 0) %>%
-            select(-Freq) %>%
-            arrange(Var1, Var2)
-
-        colnames(table) <- c(l_coarser, l_finer)
-        if (i == 1) {
-            hpop_table <- table
-        } else {
-            hpop_table <- full_join(hpop_table, table)
-        }
-    }
-    hpop_tree <- hpop_table %>%
-        mutate(pathString = apply(hpop_table, 1, function(row) { paste(c("tumor", row), collapse = "/") })) %>%
-        as.Node()
-    hpop_table
+    hpops <- .get_pop_hierarchy(annots)
 
     hscref <- list(
         screfs = screfs,
         nlevels = n_lvl,
         project_name = project_name,
-        hpop_table = hpop_table,
-        hpop_tree = hpop_tree
+        hpop_table = hpops$hpop_table,
+        hpop_tree = hpops$hpop_tree
     )
     class(hscref) <- "hscreference"
     return(hscref)
@@ -263,6 +243,33 @@ compute_reference <- function(x, ...) {
     }
     return(reference_res)
 }
+
+#' @import data.tree as.Node
+.get_pop_hierarchy <- function(annots) {
+    for(i in 1:(ncol(annots)-1)) {
+        l_coarser <- paste0("l", i)
+        l_finer <- paste0("l", i+1)
+
+        table <- table(annots[,l_coarser], annots[,l_finer]) %>%
+            as.data.frame() %>%
+            filter(Freq > 0) %>%
+            select(-Freq) %>%
+            arrange(Var1, Var2)
+
+        colnames(table) <- c(l_coarser, l_finer)
+        if (i == 1) {
+            hpop_table <- table
+        } else {
+            hpop_table <- full_join(hpop_table, table)
+        }
+    }
+    hpop_tree <- hpop_table %>%
+        mutate(pathString = apply(hpop_table, 1, function(row) { paste(c("populations", row), collapse = "/") })) %>%
+        as.Node()
+    hpop_table
+    return(list(hpop_tree = hpop_tree, hpop_table = hpop_table))
+}
+
 
 #' @export
 print.screference <- function(scref) {

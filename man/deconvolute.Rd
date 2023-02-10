@@ -11,6 +11,7 @@
   method = deconvolution_methods()[1],
   type = c("population", "spillover", "lod")[1],
   pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
+  correct_finer = TRUE,
   ...
 )
 
@@ -18,7 +19,8 @@
   bulk_data,
   scref,
   method = deconvolution_methods()[1],
-  bulk_norm = c("rpm", "none", "proportional_fitting")[3],
+  bulk_norm = c("none", "rpm", "proportional_fitting")[1],
+  correct_finer = TRUE,
   ...
 )
 }
@@ -38,6 +40,9 @@ methods, consult `deconvolution_methods()`}
 `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 for using the mean library size of the pseudobulk data to normalize.}
 
+\item{correct_finer}{normalize the resulting fractions from finer-grained
+annotation using coarser-grained results}
+
 \item{...}{other parameters, passed to the method wrapper, enables the user
 to change the method parameters. See: `deconvolute_{method}` where `{method}`
 is the method name in lowercase for method-specific parameters}
@@ -47,7 +52,7 @@ is the method name in lowercase for method-specific parameters}
 \item{bulk_norm}{the normalization to be applied in the bulk data. One of:
 `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 for using the mean library size of the pseudobulk data to normalize. If already
-normalized, make sure to choose `"none"`.}
+normalized, make sure to choose `"none"` (default)}
 }
 \value{
 an object of class `scbench`

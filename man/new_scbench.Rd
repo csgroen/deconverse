@@ -6,8 +6,8 @@
 \usage{
 new_scbench(
   ref_scrna,
-  pop_bounds,
   annot_ids,
+  pop_bounds = NULL,
   project_name = "project",
   cache_path = "scbench_cache",
   batch_id = NULL
@@ -16,10 +16,11 @@ new_scbench(
 \arguments{
 \item{ref_scrna}{a reference Seurat object}
 
-\item{pop_bounds}{list of population bounds, see example}
-
 \item{annot_ids}{named vector with column names of annotations per level,
 e.g. `c("l1" = "annot1", "l2" = "annot2")`}
+
+\item{pop_bounds}{list of population bounds, see example. If `NULL`,
+bounds will be set to 0-1 for every population.}
 
 \item{project_name}{a string indicating the project name, used for caching}
 

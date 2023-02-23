@@ -53,6 +53,10 @@ new_scbench <- function(ref_scrna,
     }
     pop_hierarchy <- .pop_hierarchy(pop_bounds, ref_scrna@meta.data)
 
+    metrics <- tibble(method = character(), level = character(),
+                      type = character(), time_elapsed_s = numeric(),
+                      peak_ram_mib = numeric())
+
     #-- Create object
     scbench <- list(ref_data = ref_scrna,
                     project_name = project_name,
@@ -65,6 +69,7 @@ new_scbench <- function(ref_scrna,
                     pop_props = NULL,
                     shrunk = FALSE,
                     deconvolution = NULL,
+                    metrics = metrics,
                     status = .update_status())
     class(scbench) <- "scbench"
     return(scbench)
@@ -350,8 +355,11 @@ pseudobulks <- function(scbench,
 # Deconvolution ----------------------------------
 #' @export
 deconvolution_methods <- function() {
-    c("ols", "dwls", "svr", "cibersortx", "music",  "bayesprism", "bisque", "autogenes")
+    c("OLS" = "ols", "DWLS" = "dwls", "SVR" = "svr", "CIBERSORTx" =  "cibersortx",
+      "MuSiC" = "music", "BayesPrism" = "bayesprism", "Bisque" = "bisque",
+      "AutoGeneS" = "autogenes", "scaden" = "scaden")
 }
+
 
 #' Deconvolute `scbench` object using a chosen method
 #'
@@ -372,6 +380,7 @@ deconvolution_methods <- function() {
 #' is the method name in lowercase for method-specific parameters
 #'
 #' @import tidyverse
+#' @importFrom peakRAM peakRAM
 #'
 #' @return an object of class `scbench`
 #'
@@ -439,7 +448,9 @@ deconvolute.scbench <- function(scbench,
         if(!is.null(deconv_res)) {
             message("Found cached results. Returning...")
             scbench[["deconvolution"]][[level]][[type]][[method]] <- deconv_res
-        } else {
+            metrics <- readRDS(filePath(method_cache, "metrics.RDS"))
+            scbench$metrics <- bind_rows(scbench$metrics, metrics)
+            } else {
             #-- Get pseudocounts and make linear transformation
             if(type == "population") {
                 pb <- scbench$pseudobulk_counts[[type]]
@@ -455,35 +466,55 @@ deconvolute.scbench <- function(scbench,
             if(method == "cibersortx") {
                 message("Running CIBERSORTx...")
                 assert(!is.null(ref$cached_results[["cibersortx"]]))
-                deconv_res <- cibersortx_deconvolute(data, ref, cache_path = method_cache, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- cibersortx_deconvolute(data, ref, cache_path = method_cache, ...))
             } else if (method == "music") {
                 message("Running MuSiC...")
-                deconv_res <- music_deconvolute(data, ref, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- music_deconvolute(data, ref, ...))
             } else if (method == "dwls") {
                 message("Running DWLS...")
                 assert(!is.null(ref$cached_results[["dwls"]]))
-                deconv_res <- dwls_deconvolute(data, ref, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- dwls_deconvolute(data, ref, ...))
             } else if(method == "ols") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running OLS using the DWLS signature matrix...")
-                deconv_res <- ols_deconvolute(data, ref, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- ols_deconvolute(data, ref, ...))
             } else if(method == "svr") {
                 assert(!is.null(ref$cached_results[["dwls"]]))
                 message("Running SVR using the DWLS signature matrix...")
-                deconv_res <- svr_deconvolute(data, ref, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- svr_deconvolute(data, ref, ...))
             } else if(method == "bayesprism") {
                 message("Running BayesPrism...")
-                deconv_res <- bayesprism_deconvolute(data, ref, cache_path = method_cache, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- bayesprism_deconvolute(data, ref, cache_path = method_cache, ...))
             } else if(method == "bisque") {
                 message("Running Bisque...")
-                deconv_res <- bisque_deconvolute(data, ref)
+                ram_change <- peakRAM(
+                    deconv_res <- bisque_deconvolute(data, ref))
             } else if(method == "autogenes") {
                 message("Running AutoGeneS...")
-                deconv_res <- autogenes_deconvolute(data, ref, ...)
+                ram_change <- peakRAM(
+                    deconv_res <- autogenes_deconvolute(data, ref, ...))
+            } else if(method == "scaden") {
+                message("Running scaden...")
+                ram_change <- peakRAM(
+                    deconv_res <- scaden_deconvolute(data, ref, res_cache_paths = method_cache, ...))
             }
+            #-- Get metrics
+            metrics <- tibble(method = method,
+                   level = level,
+                   type = type,
+                   time_elapsed_s = ram_change$Elapsed_Time_sec,
+                   peak_ram_mib = ram_change$Peak_RAM_Used_MiB)
             #-- Save to cache
             saveRDS(deconv_res, file = filePath(method_cache, "deconv_res.RDS"))
+            saveRDS(metrics, file = filePath(method_cache, "metrics.RDS"))
             #-- Return
+            scbench$metrics <- bind_rows(scbench$metrics, metrics)
             scbench[["deconvolution"]][[level]][[type]][[method]] <- deconv_res
         }
     }
@@ -593,6 +624,9 @@ deconvolute.matrix <- function(bulk_data, scref,
         } else if(method == "autogenes") {
             message("Running AutoGeneS...")
             deconv_res <- autogenes_deconvolute(bulk_data, ref, ...)
+        } else if(method == "scaden") {
+            message("Running scaden...")
+            deconv_res <- scaden_deconvolute(bulk_data, ref, ...)
         }
         all_results[[level]] <- deconv_res
     }
@@ -693,8 +727,91 @@ deconvolute_all.matrix <- function(bulk_data,
 }
 
 # Gets -------------------
+#' Get summary of benchmark results for an analysis type
+#' @param scbench a processed `scbench` object
+#'
+#' @return a summarized table of population benchmarking results for all tested
+#' methods, ordered by mean correlation with ground truth proportions.
+#'
+#' @importFrom yardstick rmse_vec
+#' @importFrom kableExtra kbl kable_paper kable_styling add_header_above scroll_box cell_spec spec_color
+#' @importFrom formattable color_bar
+#' @export
+results.scbench <- function(scbench) {
+    assert(!is.null(scbench[["deconvolution"]]))
+    levels <- paste0("l", 1:scbench$nlevels)
+    deconv_res <- lapply(levels, function(lv) {
+        get_benchmark_results(scbench, level = lv, type = "population")
+    })
+    names(deconv_res) <- levels
+
+    #-- Get table per level
+    pop_res <- lapply(levels, function(lv) {
+        tb <- deconv_res[[lv]]
+        cor_tb <-
+            tb %>%
+            group_by(population, method) %>%
+            summarize(cor = cor(truth, pred, use = "pair")) %>%
+            pivot_wider(names_from = population, values_from = cor) %>%
+            rename_with(~ paste0("cor_", .), .cols = -method)
+        rmse_tb <-
+            tb %>%
+            group_by(population, method) %>%
+            summarize(rmse = yardstick::rmse_vec(truth, pred)) %>%
+            pivot_wider(names_from = population, values_from = rmse) %>%
+            rename_with(~ paste0("rmse_", .), .cols = -method)
+        deconv_methods <- .denconv_method_names()
+        full_tb <- cor_tb %>%
+            full_join(rmse_tb, by = "method") %>%
+            full_join(scbench$metrics %>%
+                          filter(level == {{lv}}, type == {{type}}) %>%
+                          select(method, deconv_ram = peak_ram_mib,
+                                 deconv_time_s = time_elapsed_s) %>%
+                          mutate(method = deconv_methods[method]), by = "method") %>%
+            rowwise() %>%
+            mutate(mean_cor = mean(c_across(starts_with("cor"))),
+                   sum_rmse = sum(c_across(starts_with("rmse")))) %>%
+            ungroup() %>%
+            arrange(desc(mean_cor))
+        n_cor <- sum(str_detect(colnames(full_tb), "^cor"))
+        n_rmse <- sum(str_detect(colnames(full_tb), "^rmse"))
+        last_cor <- colnames(full_tb)[n_cor+1]
+        full_tb <- full_tb %>%
+            mutate(across(.cols = (matches("cor") | matches("rmse")), signif, digits = 2)) %>%
+            relocate(mean_cor, .after = method) %>%
+            relocate(sum_rmse, .after = {{last_cor}})
+        #-- Make html output
+        tb4kable <- full_tb %>%
+            rename(`RAM (MiB)` = deconv_ram, `Time (s)` = deconv_time_s,
+                   Mean = mean_cor, Sum = sum_rmse)
+        tb_colnames <- colnames(tb4kable) %>% str_remove("cor_|rmse_")
+        max_sum <- max(tb4kable$Sum)
+        tb4kable$Mean <- cell_spec(tb4kable$Mean,
+                                   background = spec_color(tb4kable$Mean, scale_from = c(0,1)))
+        tb4kable$Sum <- cell_spec(tb4kable$Sum, color = "white",
+                                  background = spec_color(tb4kable$Sum, option = "inferno",
+                                                          scale_from = c(0, max_sum+(max_sum/3))))
+        tb4kable$`RAM (MiB)` <- color_bar()(tb4kable$`RAM (MiB)`)
+        tb4kable$`Time (s)` <- color_bar()(tb4kable$`Time (s)`)
+
+        form_tb <- tb4kable %>%
+            kbl(col.names = tb_colnames, escape = F) %>%
+            kable_paper(full_width = F) %>%
+            kable_styling(font_size = 11) %>%
+            add_header_above(c(" " = 1,
+                               "Correlation" = n_cor+1,
+                               "RMSE" = n_rmse+1,
+                               "Performance" = 2)) %>%
+            scroll_box(width = "100%", height = "100%")
+
+        list(table = full_tb, viz = form_tb)
+    })
+    return(pop_res)
+}
+
+
 # TODO: Improve document
-#' Get benchmark results from `scbench` object
+#' Get benchmark results from `scbench` object in a tidy format
 #'
 #' @param scbench an `scbench` object already processed by `deconvolute` or
 #' `deconvolute_all`
@@ -713,17 +830,19 @@ get_benchmark_results <- function(scbench, methods = NULL, level = NULL, type = 
     assert(!is.null(scbench[["mixtures"]]))
     assert(!is.null(scbench[["deconvolution"]]))
 
-    if(is.null(methods)) {
-        methods <- names(scbench[["deconvolution"]][[type]])
-    }
     level <- .get_level(level, scbench)
 
+    if(is.null(methods)) {
+        methods <- names(scbench[["deconvolution"]][[level]][[type]])
+    }
+
+    deconv_methods <- .denconv_method_names()
     if(type == "population") {
         results <- lapply(methods, function(method) {
             deconv_res <- scbench$deconvolution[[level]][["population"]][[method]]
             bench_tb <- .get_benchmark_fractions(scbench, deconv_res, level)
             results <- .get_bench_results(deconv_res, bench_tb) %>%
-                mutate(method = method)
+                mutate(method = deconv_methods[method])
         }) %>%
             bind_rows()
     } else if(type == "spillover") {
@@ -1199,7 +1318,10 @@ deconvolute <- function(x, ...) {
 deconvolute_all <- function(x, ...) {
     UseMethod("deconvolute_all")
 }
-
+#' @export
+results <- function(x, ...) {
+    UseMethod("results")
+}
 # Helpers ------------
 
 #' @export
@@ -1682,4 +1804,10 @@ theme_sparse <- function (...)
     gt$grobs[to.delete] <- NULL
     gt$layout <- gt$layout[-to.delete, ]
     as_ggplot(gt)
+}
+
+.denconv_method_names <- function() {
+    deconv_methods <- deconvolution_methods()
+    deconv_methods <- setNames(names(deconv_methods), deconv_methods)
+    return(deconv_methods)
 }

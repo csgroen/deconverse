@@ -2,7 +2,7 @@
 % Please edit documentation in R/scbench.R
 \name{get_benchmark_results}
 \alias{get_benchmark_results}
-\title{Get benchmark results from `scbench` object}
+\title{Get benchmark results from `scbench` object in a tidy format}
 \usage{
 get_benchmark_results(
   scbench,
@@ -24,5 +24,5 @@ for the methods indicated. See `deconvolution_methods()` for methods.}
 \item{a}{`tibble` with results.}
 }
 \description{
-Get benchmark results from `scbench` object
+Get benchmark results from `scbench` object in a tidy format
 }

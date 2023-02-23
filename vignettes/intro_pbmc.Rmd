@@ -227,7 +227,7 @@ Here, we're demonstrating with 6 methods currently implemented. For a full list,
 ```{r results='hide', message=FALSE, warning=FALSE}
 pbmc_bench <- pbmc_bench |> 
     pseudobulks(ncells = 1000) |>
-    deconvolute_all(pbmc_ref, 
+    deconvolute_all(pbmc_ref,
                     methods = c("dwls", "svr", "ols",
                                 "autogenes", "bisque"))
 ```
@@ -315,11 +315,10 @@ file.remove("GSE107011_TPM.txt.gz")
 As gene annotation was not provided, we download and add annotation from the same version used to pre-process the data according to their documentation to get gene symbols.
 
 ```{r}
-samp_annot$data_processing.2[1] #Gencode 26, ~ Ensembl 91
 library(biomaRt)
 ensembl <- useEnsembl(biomart = "genes", 
                       dataset = "hsapiens_gene_ensembl", 
-                      version = 91)
+                      version = 92)
 # ensembl <- useDataset(ensembl, "genes")
 gene_annot <- getBM(attributes = c("ensembl_gene_id_version", "hgnc_symbol"),
                     filters = "ensembl_gene_id_version",
@@ -345,6 +344,10 @@ Now we can run `deconverse` on the bulk PBMC dataset with symbol identifiers fro
 ```{r message=FALSE, warning=FALSE, resukts='hide'}
 deconv_res <- deconvolute_all(gexp, pbmc_ref, methods = c("dwls", "svr", "ols",
                                                           "autogenes", "bisque", "svr"))
+```
+
+```{r}
+deconv_res <- deconvolute(gexp, pbmc_ref, method = "scaden", retrain = TRUE)
 ```
 
 ### Compare results

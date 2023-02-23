@@ -1,5 +1,5 @@
 *.html
 *.R
 data
-scbench
-scref
+scbench_cache
+scref_cache

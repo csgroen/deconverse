@@ -61,6 +61,10 @@ new_screference <- function(
     scref$project_name <- project_name
     scref$populations <- populations
     scref$cache <- cache_path
+    scref$metrics <- tibble(method = character(), level = character(),
+                            type = character(),
+                            time_elapsed_s = numeric(),
+                            peak_ram_mib = numeric())
     return(scref)
 }
 
@@ -74,6 +78,7 @@ new_screference <- function(
 #' See the wrapper (`{method}_scref`) where `{method}` is the method name for
 #' parameters.
 #'
+#' @importFrom peakRAM peakRAM
 #' @return an object of class `screference`
 #' @rdname compute_reference
 #'
@@ -98,17 +103,24 @@ compute_reference.screference <- function(scref,
     #-- Compute reference
     if(method == "cibersortx") {
         message("CIBERSORTx: Building reference matrix...")
-        out_path <- cibersortx_scref(scref, cache_path = method_cache, ...)
+        ram_use <- peakRAM(
+            out_path <- cibersortx_scref(scref, cache_path = method_cache, ...))
         reference_res <- cx_ref
     } else if (method == "dwls" | method == "ols" | method == "svr") {
         message("DWLS/OLS/SVR: Building reference matrix using Seurat...")
-        reference_res <- dwls_scref(scref, cache_path = method_cache, ...)
+        ram_use <- peakRAM(
+            reference_res <- dwls_scref(scref, cache_path = method_cache, ...))
     } else if(method == "bayesprism") {
         message("BayesPrism: Building reference matrix...")
         reference_res <- bayesprism_scref(scref, cache_path = method_cache, ...)
     } else if(method == "autogenes") {
         message("AutoGeneS: Building reference centroids...")
-        reference_res <-autogenes_scref(scref, ...)
+        reference_res <- autogenes_scref(scref, ...)
+    } else if (method == "scaden") {
+        message("scaden: Building reference model...")
+        message("--- Note: this method might need to be retrained on features shared with the target bulk matrix")
+        ram_use <- peakRAM(
+            reference_res <- scaden_scref(scref, cache_path = method_cache, ...))
     } else {
         message("No need to compute reference beforehand. Run `deconvolute` with the `scref` object directly.")
     }
@@ -244,7 +256,7 @@ compute_reference <- function(x, ...) {
     return(reference_res)
 }
 
-#' @import data.tree as.Node
+#' @importFrom data.tree as.Node
 .get_pop_hierarchy <- function(annots) {
     for(i in 1:(ncol(annots)-1)) {
         l_coarser <- paste0("l", i)

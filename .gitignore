@@ -3,3 +3,10 @@
 .RData
 .Ruserdata
 inst/doc
+scref_cache
+scbench_cache
+example_data
+vignettes/scbench_cache
+vignettes/scref_cache
+vignettes/data
+*.RDS

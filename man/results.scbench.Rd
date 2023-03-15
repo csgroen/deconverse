@@ -4,10 +4,12 @@
 \alias{results.scbench}
 \title{Get summary of benchmark results for an analysis type}
 \usage{
-\method{results}{scbench}(scbench)
+\method{results}{scbench}(scbench, type = "population")
 }
 \arguments{
 \item{scbench}{a processed `scbench` object}
+
+\item{type}{to be implemented. For now, only returns population results}
 }
 \value{
 a summarized table of population benchmarking results for all tested

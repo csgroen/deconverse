@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">deconverse</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,6 +91,11 @@ method implemented in CIBERSORTx</dd>
         </dt>
         <dd>Compute reference signature matrix from `screference` object using
 method implemented in DWLS package for methods `dwls`, `svr` and `ols`</dd>
+      </dl><dl><dt>
+          
+          <code><a href="scaden_scref.html">scaden_scref()</a></code> 
+        </dt>
+        <dd>Compute reference matrix from an `screference` object using scaden (Single-cell assisted deconvolutional network)</dd>
       </dl></div><div class="section level2">
       <h2 id="benchmarking">Benchmarking<a class="anchor" aria-label="anchor" href="#benchmarking"></a></h2>
       
@@ -188,13 +193,18 @@ population mixtures in an `scbench` object</dd>
         <dd>Ordinary least squares (OLS) deconvolution of bulk data using an `screference`</dd>
       </dl><dl><dt>
           
+          <code><a href="scaden_deconvolute.html">scaden_deconvolute()</a></code> 
+        </dt>
+        <dd>scaden (Single-cell assisted deconvolutional network) deconvolution of bulk data using an `screference`</dd>
+      </dl><dl><dt>
+          
           <code><a href="svr_deconvolute.html">svr_deconvolute()</a></code> 
         </dt>
         <dd>Support vector regression (SVR) deconvolution of bulk data using an `screference`</dd>
       </dl></div><div class="section level2">
       <h2 id="plotting-and-results">Plotting and Results<a class="anchor" aria-label="anchor" href="#plotting-and-results"></a></h2>
       
-      <p class="section-desc"></p><p>Functions to evaluate visually evaluate benchmarking results</p>
+      <p class="section-desc"></p><p>Functions to recover benchmarking results</p>
 
       
     </div><div id="" class="section level2">
@@ -203,6 +213,17 @@ population mixtures in an `scbench` object</dd>
       
 
       <dl><dt>
+          
+          <code><a href="results.scbench.html">results(<i>&lt;scbench&gt;</i>)</a></code> 
+        </dt>
+        <dd>Get summary of benchmark results for an analysis type</dd>
+      </dl><dl><dt>
+          
+          <code><a href="results_tidy.html">results_tidy()</a></code> 
+        </dt>
+        <dd>Get benchmark results from `scbench` object in a tidy format, without
+performance metrics</dd>
+      </dl><dl><dt>
           
           <code><a href="plt_cor_heatmap.html">plt_cor_heatmap()</a></code> 
         </dt>
@@ -248,11 +269,6 @@ true mixtures used for the pseudobulks</dd>
         </dt>
         <dd>Plot correlations between deconvolution results and spillover mixtures
 between each pair of populations</dd>
-      </dl><dl><dt>
-          
-          <code><a href="get_benchmark_results.html">get_benchmark_results()</a></code> 
-        </dt>
-        <dd>Get benchmark results from `scbench` object</dd>
       </dl></div><div class="section level2">
       <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a></h2>
       

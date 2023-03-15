@@ -729,6 +729,7 @@ deconvolute_all.matrix <- function(bulk_data,
 # Gets -------------------
 #' Get summary of benchmark results for an analysis type
 #' @param scbench a processed `scbench` object
+#' @param type to be implemented. For now, only returns population results
 #'
 #' @return a summarized table of population benchmarking results for all tested
 #' methods, ordered by mean correlation with ground truth proportions.
@@ -737,14 +738,17 @@ deconvolute_all.matrix <- function(bulk_data,
 #' @importFrom kableExtra kbl kable_paper kable_styling add_header_above scroll_box cell_spec spec_color
 #' @importFrom formattable color_bar
 #' @export
-results.scbench <- function(scbench) {
+results.scbench <- function(scbench,
+                            type = "population") {
+    if(type != "population") {
+        stop('Not yet implemented')
+    }
     assert(!is.null(scbench[["deconvolution"]]))
     levels <- paste0("l", 1:scbench$nlevels)
     deconv_res <- lapply(levels, function(lv) {
-        get_benchmark_results(scbench, level = lv, type = "population")
+        results_tidy(scbench, level = lv, type = type)
     })
     names(deconv_res) <- levels
-
     #-- Get table per level
     pop_res <- lapply(levels, function(lv) {
         tb <- deconv_res[[lv]]
@@ -809,9 +813,8 @@ results.scbench <- function(scbench) {
     return(pop_res)
 }
 
-
-# TODO: Improve document
-#' Get benchmark results from `scbench` object in a tidy format
+#' Get benchmark results from `scbench` object in a tidy format, without
+#' performance metrics
 #'
 #' @param scbench an `scbench` object already processed by `deconvolute` or
 #' `deconvolute_all`
@@ -823,9 +826,7 @@ results.scbench <- function(scbench) {
 #' @import tidyverse
 #'
 #' @param a `tibble` with results.
-#'
-#' @export
-get_benchmark_results <- function(scbench, methods = NULL, level = NULL, type = "population") {
+results_tidy <- function(scbench, methods = NULL, level = NULL, type = "population") {
     assert(class(scbench) == "scbench")
     assert(!is.null(scbench[["mixtures"]]))
     assert(!is.null(scbench[["deconvolution"]]))

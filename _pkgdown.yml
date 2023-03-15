@@ -24,10 +24,11 @@ reference:
     - deconvolute_all.scbench
     - ends_with("_deconvolute")
 - title: Plotting and Results
-  desc: Functions to evaluate visually evaluate benchmarking results
+  desc: Functions to recover benchmarking results
 - contents:
+    - results.scbench
+    - results_tidy
     - starts_with("plt_")
-    - get_benchmark_results
 - title: Data
   desc: Included data
 - contents:

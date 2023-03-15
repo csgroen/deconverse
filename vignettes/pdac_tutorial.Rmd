@@ -131,7 +131,7 @@ paad_ref <- new_hscreference(so_paad,
 
 ### Compute references for different methods
 
-```{r results='hide', echo=FALSE, eval=FALSE}
+```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To speed up the pipeline, we can download the cached results:
 # download.file("https://xfer.curie.fr/get/nil/m7Xl4ygpjWv/scref_cache.zip", "scref_cache.zip")
 # unzip("scref_cache.zip")
@@ -241,7 +241,7 @@ paad_bench <- new_scbench(so_paad2,
 
 ### Benchmark
 
-```{r results='hide', echo=FALSE, eval=FALSE}
+```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To speed up computation, we can download the cache:
 # download.file("https://xfer.curie.fr/get/nil/UmcJ4yR5cfv/scbench_cache.zip", "scbench_cache.zip")
 # unzip("scbench_cache.zip")

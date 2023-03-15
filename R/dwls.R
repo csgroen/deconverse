@@ -24,9 +24,12 @@ dwls_deconvolute <- function(bulk_data, scref, ncores = 4) {
     data4dwls <- .trimData(sc_sigs, bulk_data)
     B_list <- lapply(1:ncol(data4dwls$bulk), function(i) data4dwls$bulk[,i])
     #-- Deconvolute
-    props <- pbmclapply(B_list, function(bulk_sample) {
+    # props <- pbmclapply(B_list, function(bulk_sample) {
+    #     .solveDampenedWLS(data4dwls$sig, bulk_sample)
+    # }, mc.cores = ncores)
+    props <- lapply(B_list, function(bulk_sample) {
         .solveDampenedWLS(data4dwls$sig, bulk_sample)
-    }, mc.cores = ncores)
+    })
     #-- Prepare results
     deconv_res <- bind_rows(props) %>%
         dplyr::rename_with(~ paste0("frac_", .)) %>%

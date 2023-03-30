@@ -29,13 +29,14 @@ reference:
     - results.scbench
     - results_tidy
     - starts_with("plt_")
+- title: Extras
+  desc: Other package functions
+- contents:
+    - test_markers
+    - delete_cached
+    - install_cibersortx
+    - .pp_PBMCs
 - title: Data
   desc: Included data
 - contents:
     - pbmc
-- title: Extras
-  desc: Other package functions
-- contents:
-    - delete_cached
-    - install_cibersortx
-    - .pp_PBMCs

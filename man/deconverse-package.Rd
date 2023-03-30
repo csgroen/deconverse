@@ -4,7 +4,7 @@
 \name{deconverse-package}
 \alias{deconverse}
 \alias{deconverse-package}
-\title{deconverse: Benchmarking of bulk deconvolution methods from single-cell references}
+\title{deconverse: Bulk deconvolution methods from single-cell references}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 

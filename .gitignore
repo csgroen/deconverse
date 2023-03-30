@@ -10,3 +10,4 @@ vignettes/scbench_cache
 vignettes/scref_cache
 vignettes/data
 *.RDS
+test_trainingSet.R

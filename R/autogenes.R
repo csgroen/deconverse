@@ -1,20 +1,6 @@
 #' @import reticulate
-.setup_deconv_conda <- function() {
-    envs <- conda_list()
-    if(!"deconverse" %in% envs$name) {
-        message("Creating `deconverse` conda environment...")
-        conda_create("deconverse",
-                     python_version = "3.8",
-                     packages = c("numpy", "numexpr>2.7.3", "pandas", "anndata",
-                                  "scipy", "scikit-learn", "matplotlib"))
-    } else {
-        message("Using `deconverse` conda environment...")
-    }
-}
-#' @import reticulate
 .install_autogenes <- function() {
     .setup_deconv_conda()
-    use_condaenv("deconverse", required = TRUE)
     packages <- py_list_packages()
     if("autogenes" %in% packages$package) {
         message("-- AutoGeneS found")

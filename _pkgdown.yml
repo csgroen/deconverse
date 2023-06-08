@@ -32,6 +32,7 @@ reference:
 - title: Extras
   desc: Other package functions
 - contents:
+    - read_h5ad
     - test_markers
     - delete_cached
     - install_cibersortx

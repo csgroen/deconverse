@@ -30,6 +30,7 @@ new_screference <- function(
     message("Generating new `screference` object...")
     #-- Check populations
     colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == annot_id] <- "annot_id"
+    seurat_obj@meta.data$annot_id <- as.character(seurat_obj@meta.data$annot_id)
     meta <- seurat_obj@meta.data
     populations <- unique(meta$annot_id)
 
@@ -104,8 +105,8 @@ compute_reference.screference <- function(scref,
     if(method == "cibersortx") {
         message("CIBERSORTx: Building reference matrix...")
         ram_use <- peakRAM(
-            out_path <- cibersortx_scref(scref, cache_path = method_cache, ...))
-        reference_res <- cx_ref
+            reference_res <- cibersortx_scref(scref, cache_path = method_cache, ...))
+        reference_res <- paste0(reference_res, "/CIBERSORTx_cell_type_sourceGEP.txt")
     } else if (method == "dwls" | method == "ols" | method == "svr") {
         message("DWLS/OLS/SVR: Building reference matrix using Seurat...")
         ram_use <- peakRAM(

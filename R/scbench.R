@@ -580,6 +580,7 @@ deconvolute.matrix <- function(bulk_data, scref,
                                method = deconvolution_methods()[1],
                                bulk_norm = c("none", "rpm", "proportional_fitting")[1],
                                correct_finer = TRUE,
+                               cache_path = ".",
                                ...) {
     assert(class(scref) %in% c("screference", "hscreference"))
 
@@ -599,7 +600,9 @@ deconvolute.matrix <- function(bulk_data, scref,
         if(method == "cibersortx") {
             message("Running CIBERSORTx...")
             assert(!is.null(ref$cached_results[["cibersortx"]]))
-            deconv_res <- cibersortx_deconvolute(bulk_data, ref, cache_path = ".", ...)
+            if(cache_path == ".") cache_path <- "cibersortx"
+            cache_path <- filePath(cache_path, level)
+            deconv_res <- cibersortx_deconvolute(bulk_data, ref, cache_path = cache_path, ...)
         } else if (method == "music") {
             message("Running MuSiC...")
             deconv_res <- music_deconvolute(bulk_data, ref, ...)
@@ -1448,6 +1451,7 @@ print.scbench <- function(x) {
 
 #' @import tidyverse
 .normalize_deconvolution_by_hierarchy <- function(hierarchy_list, finer_deconv, coarser_deconv) {
+    finer_deconv <- finer_deconv %>% select(sample, starts_with("frac"), method)
     finer_deconv_norm <- lapply(1:length(hierarchy_list), function(j) {
         coarse_col <- paste0("frac_", names(hierarchy_list)[j])
         coarse_vec <- coarser_deconv[[coarse_col]]

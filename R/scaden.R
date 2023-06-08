@@ -1,7 +1,6 @@
 #' @import reticulate
 .install_scaden <- function() {
     .setup_deconv_conda()
-    use_condaenv("deconverse", required = TRUE)
     packages <- py_list_packages()
     if("scaden" %in% packages$package) {
         message("-- scaden found")
@@ -13,7 +12,6 @@
 }
 #' @import reticulate
 .install_tensorflow <- function() {
-    use_condaenv("deconverse", required = TRUE)
     packages <- py_list_packages()
     if("tensorflow-gpu" %in% packages$package) {
         message("-- tensorflow-gpu found")
@@ -137,9 +135,10 @@ scaden_deconvolute <- function(bulk_data, scref,
     # Write bulk_data --------
     dir.create(res_cache_path, showWarnings = FALSE, recursive = TRUE)
     train_data <- fread(str_glue("{cache_path}/bulk_ex.txt"))
-    bulk_data %>%
-        as.data.frame() %>%
-        rownames_to_column("symbol") %>%
+    df <- bulk_data %>% as.data.frame()
+    df[,"symbol"] <- rownames(df)
+    df %>%
+        relocate("symbol") %>%
         filter(symbol %in% train_data$symbol) %>%
         fwrite(file = str_glue("{res_cache_path}/bulk_to_deconv.txt"), sep = "\t",
                row.names = FALSE, col.names = TRUE)
@@ -151,7 +150,7 @@ scaden_deconvolute <- function(bulk_data, scref,
     system(scaden_predict)
     scaden_prop <- read_tsv(str_glue("{res_cache_path}/scaden_predictions.txt"),
                             show_col_types = FALSE) %>%
-        rename(sample = `...1`) %>%
+        dplyr::rename(sample = `...1`) %>%
         rename_with(~ paste0("frac_", .), .cols = -sample) %>%
         mutate(method = "scaden") %>%
         tibble()
@@ -167,17 +166,19 @@ scaden_deconvolute <- function(bulk_data, scref,
 
         pb_mat <- sapply(sampled_cells, function(cells) {
             rowMeans(as.matrix(scref$seurat_obj@assays$RNA@counts)[,cells]) }) %>%
-            as.data.frame() %>%
-            rownames_to_column("symbol")
+            as.data.frame()
+        pb_mat[,"symbol"] <- rownames(pb_mat)
+        pb_mat <- relocate(pb_mat, "symbol")
         fwrite(pb_mat,
                file = str_glue("{cache_path}/bulk_ex.txt"), sep = "\t",
                col.names = TRUE, row.names = FALSE)
         features = pb_mat$symbol
     } else {
         features <- intersect(rownames(scref$seurat_obj@assays$RNA@counts), rownames(bulk_mat))
-        bulk_mat[features,] %>%
-            as.data.frame() %>%
-            rownames_to_column("symbol") %>%
+        bulk_mat2 <- bulk_mat[features,] %>%
+            as.data.frame()
+        bulk_mat2[,"symbol"] <- rownames(bulk_mat2)
+        relocate(bulk_mat2, "symbol") %>%
             fwrite(file = str_glue("{cache_path}/bulk_ex.txt"), sep = "\t",
                    row.names = FALSE, col.names = TRUE)
     }

@@ -1,7 +1,7 @@
 Package: deconverse
 Type: Package
 Title: Bulk deconvolution methods from single-cell references
-Version: 0.2.4
+Version: 0.2.5
 Author: Clarice S Groeneveld
 Maintainer: Clarice S Groeneveld <clari.groeneveld@gmail.com>
 Description: This package implements wrappers for methods of bulk RNA-seq 

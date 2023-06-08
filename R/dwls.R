@@ -20,6 +20,7 @@ dwls_deconvolute <- function(bulk_data, scref, ncores = 4) {
         stop("scref doesn't have cached `dwls` reference signatures. Please run `compute_reference` on the scref object.")
     }
     sc_sigs <- scref$cached_results$dwls
+    # colnames(sc_sigs) <- scref$populations
     #-- Pre-process
     data4dwls <- .trimData(sc_sigs, bulk_data)
     B_list <- lapply(1:ncol(data4dwls$bulk), function(i) data4dwls$bulk[,i])

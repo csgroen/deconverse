@@ -134,6 +134,7 @@ cibersortx_deconvolute <- function(bulk_data,
                                    token = NULL) {
     #-- Get reference data
     ref <- scref$cached_results$cibersortx
+    # ref <- paste0(ref, "/CIBERSORTx_cell_type_sourceGEP.txt")
 
     #-- Check credentials
     if(is.null(username) | is.null(token)) {
@@ -169,8 +170,8 @@ cibersortx_deconvolute <- function(bulk_data,
 
     #-- Running CIBERSORTx in docker
     header <- case_when(
-        .docker_check() ~ str_glue("docker run -v {data_path}:/src/data/ -v {out_path}:/src/outdir"),
-        .singularity_check() ~ str_glue("singularity exec -B {data_path}:/src/data/ -B {out_path}:/src/outdir"),
+        .docker_check() ~ str_glue("docker run -v {data_path}:/src/data/ -v {out_path}:/src/outdir/"),
+        .singularity_check() ~ str_glue("singularity exec -B {data_path}:/src/data/ -B {out_path}:/src/outdir/"),
         TRUE ~ "")
     if(header == "") {
         stop("No CIBERSORTx container found. Please run `install_cibersortx()`")
@@ -179,7 +180,7 @@ cibersortx_deconvolute <- function(bulk_data,
         str_detect(header, "docker") ~ "cibersortx/fractions",
         TRUE ~ paste0(find.package("deconverse"), "/cibersortx.sif /src/CIBERSORTxFractions")
     )
-    docker_call <- str_glue('{header} {container_address} --username {username} --token {token} --rmbatchBmode TRUE --verbose TRUE --QN FALSE --mixture src/data/data.txt --sigmatrix /src/data/sig_mat.txt')
+    docker_call <- str_glue('{header} {container_address} --username {username} --token {token} --rmbatchBmode TRUE --verbose TRUE --QN FALSE --mixture /src/data/data.txt --sigmatrix /src/data/sig_mat.txt')
     rm(ref); rm(bulk_data); gc()
     message("-- Running CIBERSORTx...")
     system(docker_call)

@@ -57,18 +57,26 @@ read_h5ad <- function(file) {
     #-- Get data
     message("Getting counts...")
     layers <- adata$layers$as_dict()
-    layers <- lapply(layers, function(mat) {
-        # mat <- py_to_r(mat)
-        mat <- t(mat)
+    if(length(layers) == 0) {
+        mat <- t(adata$X)
         rownames(mat) <- gene_names
         colnames(mat) <- cell_names
-        return(mat)
-    })
-
+        layers <- list(counts = mat)
+    } else {
+        layers <- lapply(layers, function(mat) {
+            # mat <- py_to_r(mat)
+            mat <- t(mat)
+            rownames(mat) <- gene_names
+            colnames(mat) <- cell_names
+            return(mat)
+        })
+    }
     message("Creating Seurat object...")
     seu <- CreateSeuratObject(counts = layers$counts)
-    seu@meta.data <- left_df_join(seu@meta.data, cell_meta)
+    added_meta <- setdiff(colnames(cell_meta), colnames(seu@meta.data))
+    seu@meta.data <- left_df_join(seu@meta.data, cell_meta[,added_meta])
     seu@assays$RNA@meta.features <- gene_meta
+
     seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^MT-")
     gc()
     return(seu)

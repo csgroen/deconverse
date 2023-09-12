@@ -25,7 +25,8 @@
 #' @param file A character string representing the path to the h5ad file.
 #'
 #' @return A Seurat object containing the data from the h5ad file.
-#' @import Seurat SeuratObject
+#' @import Matrix SeuratObject
+#' @importFrom Seurat CreateSeuratObject PercentageFeatureSet
 #' @importFrom dplyr relocate
 #' @importFrom reticulate import
 #' @importFrom stringr str_detect
@@ -58,7 +59,7 @@ read_h5ad <- function(file) {
     message("Getting counts...")
     layers <- adata$layers$as_dict()
     if(length(layers) == 0) {
-        mat <- t(adata$X)
+        mat <- base::t(adata$X)
         rownames(mat) <- gene_names
         colnames(mat) <- cell_names
         layers <- list(counts = mat)

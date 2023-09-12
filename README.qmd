@@ -2,7 +2,7 @@
 format: gfm
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.qmd. Please edit that file -->
 
 ## `deconverse`: bulk RNA-seq deconvolution benchmark using single-cell reference profiles <img src="man/figures/logo.png" align="right" width="120"/>
 
@@ -11,7 +11,8 @@ require(badger)
 cat(
 	badge_devel("csgroen/deconverse", "blue"),
 	badge_lifecycle("experimental"),
-	badge_last_commit("csgroen/deconverse")
+	badge_last_commit("csgroen/deconverse"),
+	badge_doi(doi = "10.5281/zenodo.8337631", color = "darkcyan")
 )
 ```
 

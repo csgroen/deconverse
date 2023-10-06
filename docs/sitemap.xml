@@ -109,6 +109,9 @@
     <loc>https://csgroen.github.io/deconverse/reference/pipe.html</loc>
   </url>
   <url>
+    <loc>https://csgroen.github.io/deconverse/reference/plt_comp_performance.html</loc>
+  </url>
+  <url>
     <loc>https://csgroen.github.io/deconverse/reference/plt_cor_heatmap.html</loc>
   </url>
   <url>
@@ -134,6 +137,9 @@
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/pseudobulks.html</loc>
+  </url>
+  <url>
+    <loc>https://csgroen.github.io/deconverse/reference/read_h5ad.html</loc>
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/results.scbench.html</loc>

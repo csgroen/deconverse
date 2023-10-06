@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">deconverse</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -94,15 +94,14 @@ of the cell type hierarchy and using results from the higher level of
 hierarchy to correct the lower level estimated fractions.</p>
 <p>In this example, that comes provided with the <code>Seurat</code>
 package, peripheral blood mononuclear cells (PBMCs) are annotated at 2
-levels of hierarchy.</p>
+levels of hierarchy. Bulk RNA-seq data can be deconvoluted at both
+levels.</p>
 <p>Usually, we would recommend building the single-cell reference on one
 dataset and benchmarking on a different one. However, for this example,
 we will split cells into training (reference) and test (benchmarking)
-set. Then, we will also demonstrate deconvolution of a bulk
-reference.</p>
-<p>Benchmarking is not a necessary step of <code>deconverse</code>, but
-a feature that can be used to compare the different implemented methods
-in your data type and decide what levels of annotation are
+set. Benchmarking is not a necessary step of <code>deconverse</code>,
+but a feature that can be used to compare the different implemented
+methods in your data type and decide what levels of annotation are
 trustworthy.</p>
 </div>
 <div class="section level2">
@@ -113,13 +112,11 @@ and its two levels of annotation.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">deconverse</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 13714 features across 2625 samples within 1 assay </span></span>
+<span><span class="co">#&gt; 13714 features across 2624 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -178,24 +175,89 @@ in another context, but here is just the same value for all cells.</p>
 <span><span class="co">#&gt; Generating new `screference` object...</span></span>
 <span><span class="co">#&gt; Generating new `screference` object...</span></span>
 <span><span class="va">pbmc_ref</span></span>
-<span><span class="co">#&gt; h-screference object named `pbmc_example` with 2 levels of annotation from 1575 cells</span></span>
-<span><span class="co">#&gt; population annotation tree: </span></span>
+<span><span class="co">#&gt; $screfs</span></span>
+<span><span class="co">#&gt; $screfs$l1</span></span>
+<span><span class="co">#&gt; $seurat_obj</span></span>
+<span><span class="co">#&gt; An object of class Seurat </span></span>
+<span><span class="co">#&gt; 13714 features across 1574 samples within 1 assay </span></span>
+<span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $project_name</span></span>
+<span><span class="co">#&gt; [1] "pbmc_example_l1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $populations</span></span>
+<span><span class="co">#&gt; [1] "Monocytic_lineage" "TNK"               "B"                </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $cache</span></span>
+<span><span class="co">#&gt; [1] "scref_cache"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $metrics</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 variables: method &lt;chr&gt;, time_elapsed_s &lt;dbl&gt;, peak_ram_mib &lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "screference"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $screfs$l2</span></span>
+<span><span class="co">#&gt; $seurat_obj</span></span>
+<span><span class="co">#&gt; An object of class Seurat </span></span>
+<span><span class="co">#&gt; 13714 features across 1574 samples within 1 assay </span></span>
+<span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $project_name</span></span>
+<span><span class="co">#&gt; [1] "pbmc_example_l2"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $populations</span></span>
+<span><span class="co">#&gt; [1] "CD14+ Mono"   "Naive CD4 T"  "B"            "NK"           "Memory CD4 T"</span></span>
+<span><span class="co">#&gt; [6] "FCGR3A+ Mono" "CD8 T"        "DC"          </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $cache</span></span>
+<span><span class="co">#&gt; [1] "scref_cache"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $metrics</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 variables: method &lt;chr&gt;, time_elapsed_s &lt;dbl&gt;, peak_ram_mib &lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "screference"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nlevels</span></span>
+<span><span class="co">#&gt; [1] 2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $project_name</span></span>
+<span><span class="co">#&gt; [1] "pbmc_example"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $hpop_table</span></span>
+<span><span class="co">#&gt;                  l1           l2</span></span>
+<span><span class="co">#&gt; 1               TNK  Naive CD4 T</span></span>
+<span><span class="co">#&gt; 2               TNK Memory CD4 T</span></span>
+<span><span class="co">#&gt; 3               TNK        CD8 T</span></span>
+<span><span class="co">#&gt; 4               TNK           NK</span></span>
+<span><span class="co">#&gt; 5                 B            B</span></span>
+<span><span class="co">#&gt; 6 Monocytic_lineage   CD14+ Mono</span></span>
+<span><span class="co">#&gt; 7 Monocytic_lineage FCGR3A+ Mono</span></span>
+<span><span class="co">#&gt; 8 Monocytic_lineage           DC</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $hpop_tree</span></span>
 <span><span class="co">#&gt;                levelName</span></span>
 <span><span class="co">#&gt; 1  populations          </span></span>
-<span><span class="co">#&gt; 2   ¦--B                </span></span>
-<span><span class="co">#&gt; 3   ¦   °--B            </span></span>
-<span><span class="co">#&gt; 4   ¦--Monocytic_lineage</span></span>
-<span><span class="co">#&gt; 5   ¦   ¦--CD14+ Mono   </span></span>
-<span><span class="co">#&gt; 6   ¦   ¦--DC           </span></span>
-<span><span class="co">#&gt; 7   ¦   °--FCGR3A+ Mono </span></span>
-<span><span class="co">#&gt; 8   °--TNK              </span></span>
-<span><span class="co">#&gt; 9       ¦--CD8 T        </span></span>
-<span><span class="co">#&gt; 10      ¦--Memory CD4 T </span></span>
-<span><span class="co">#&gt; 11      ¦--Naive CD4 T  </span></span>
-<span><span class="co">#&gt; 12      °--NK           </span></span>
-<span><span class="co">#&gt; cached results: </span></span>
-<span><span class="co">#&gt; l1:  </span></span>
-<span><span class="co">#&gt; l2:</span></span></code></pre></div>
+<span><span class="co">#&gt; 2   ¦--TNK              </span></span>
+<span><span class="co">#&gt; 3   ¦   ¦--Naive CD4 T  </span></span>
+<span><span class="co">#&gt; 4   ¦   ¦--Memory CD4 T </span></span>
+<span><span class="co">#&gt; 5   ¦   ¦--CD8 T        </span></span>
+<span><span class="co">#&gt; 6   ¦   °--NK           </span></span>
+<span><span class="co">#&gt; 7   ¦--B                </span></span>
+<span><span class="co">#&gt; 8   ¦   °--B            </span></span>
+<span><span class="co">#&gt; 9   °--Monocytic_lineage</span></span>
+<span><span class="co">#&gt; 10      ¦--CD14+ Mono   </span></span>
+<span><span class="co">#&gt; 11      ¦--FCGR3A+ Mono </span></span>
+<span><span class="co">#&gt; 12      °--DC           </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "hscreference"</span></span></code></pre></div>
 <p>Once the object is created, it can be used to compute a reference for
 different methods. We’ll compute references for DWLS (which is also used
 for OLS and SVR), svr and AutoGeneS. For all available deconvolution
@@ -206,7 +268,7 @@ cache):</p>
 <code class="sourceCode R"><span><span class="co"># Optional: parallelize with Seurat</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>future.globals.maxSize<span class="op">=</span> <span class="fl">4000</span><span class="op">*</span><span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="st">"multicore"</span>, workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="st">"multicore"</span>, workers <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in supportsMulticoreAndRStudio(...): [ONE-TIME WARNING] Forked</span></span>
 <span><span class="co">#&gt; processing ('multicore') is not supported when running R from RStudio because</span></span>
 <span><span class="co">#&gt; it is considered unstable. For more details, how to control forked processing</span></span>
@@ -220,220 +282,22 @@ cache):</p>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
+<span><span class="co">#&gt; Results found in cache, returning...</span></span>
+<span><span class="co">#&gt; Results found in cache, returning...</span></span>
+<span><span class="co">#&gt; Results found in cache, returning...</span></span>
+<span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span></code></pre></div>
 <p>Now the single-cell reference is ready for deconvolution! First,
 let’s benchmark it with our test set.</p>
-</div>
-<div class="section level2">
-<h2 id="scbench-run-benchmarking-on-test-data">
-<code>scbench</code>: Run benchmarking on test data<a class="anchor" aria-label="anchor" href="#scbench-run-benchmarking-on-test-data"></a>
-</h2>
 <div class="section level3">
-<h3 id="bounds">Bounds<a class="anchor" aria-label="anchor" href="#bounds"></a>
+<h3 id="computational-performance">Computational performance<a class="anchor" aria-label="anchor" href="#computational-performance"></a>
 </h3>
-<p>Now, let’s build our benchmarking set. First, we need to understand
-how the annotations relate to each other to build the “bounds” of our
-pseudobulk simulations (don’t worry, this will be further
-explained).</p>
+<p>We can plot computational performance to compare the methods. This
+information is also available as a table
+(<code>pbmc_ref$metrics</code>)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_major_identities</span>, <span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_minor_identities</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    </span></span>
-<span><span class="co">#&gt;                       B CD14+ Mono CD8 T  DC FCGR3A+ Mono Memory CD4 T</span></span>
-<span><span class="co">#&gt;   B                 134          0     0   0            0            0</span></span>
-<span><span class="co">#&gt;   Monocytic_lineage   0        198     0   9           71            0</span></span>
-<span><span class="co">#&gt;   TNK                 0          0   121   0            0          180</span></span>
-<span><span class="co">#&gt;                    </span></span>
-<span><span class="co">#&gt;                     Naive CD4 T  NK</span></span>
-<span><span class="co">#&gt;   B                           0   0</span></span>
-<span><span class="co">#&gt;   Monocytic_lineage           0   0</span></span>
-<span><span class="co">#&gt;   TNK                       277  60</span></span></code></pre></div>
-<p>We can see that <code>l1 B</code> cells only correspond to
-<code>l2 B</code> cells; <code>l1 Monocytic_lineage</code> becomes
-<code>l2 CD14+ Mono</code>, <code>FCGR3A+ Mono</code> and
-<code>DC</code>; and <code>l1 TNK</code> splits into
-<code>l2 CD8 T</code>, <code>Memory CD4 T</code>,
-<code>Naive CD4 T</code> and <code>NK</code>.</p>
-<p>In PBMCs, lymphocytes make up about 70-90% of cells and monocytes
-make up 10-20%. If we want to make pseudobulk mixtures that resemble
-real PBMCs, we should include in them more lymphocytes, particularly
-more abundant T cells, than monocytes. This is what bounds are for.</p>
-<p>Bounds are used to create random mixtures with controlled
-proportions. For each population, we need a lower and upper bound. We’ll
-start with <code>l1</code> populations:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">l1_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B"</span>, <span class="st">"Monocytic_lineage"</span>, <span class="st">"TNK"</span><span class="op">)</span>,</span>
-<span>    lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
-<span>    upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.3</span>, <span class="fl">0.85</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>We’ve set that B cells will make up between 10-20% of mixtures,
-Monocytic lineage between 10-30% and TNK 50-85%. The structure of bounds
-should always be a <code>data.frame</code> with 3 columns (population,
-lower, upper). Make sure the population names are the same as the levels
-in the annotation table.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_major_identities</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "B"                 "Monocytic_lineage" "TNK"</span></span></code></pre></div>
-<p>Bounds at finer levels of l2 are always given within the context of
-their coarser grained annotation. For example,
-<code>Monocytic lineage</code> will be split into 3 populations. As
-dendritic cells are more rare than monocytes, we can make them more rare
-in our mixtures as well:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">l2_mono_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>        population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD14+ Mono"</span>, <span class="st">"FCGR3A+ Mono"</span>, <span class="st">"DC"</span><span class="op">)</span>,</span>
-<span>        lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.2</span>, <span class="fl">0</span><span class="op">)</span>,</span>
-<span>        upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.6</span>, <span class="fl">0.2</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span></code></pre></div>
-<p>Following the same logic, we can do the bounds for the
-sub-populations of <code>TNK</code>. It’s not necessary for
-<code>B</code>, since they are not split into sub-populations in this
-annotation.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">l2_tnk_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>        population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD8 T"</span>, <span class="st">"Memory CD4 T"</span>, <span class="st">"Naive CD4 T"</span>, <span class="st">"NK"</span><span class="op">)</span>,</span>
-<span>        lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
-<span>        upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span></code></pre></div>
-<p>All bounds should be put together into a list, and names should be l1
-for the coarsest-grained population and
-<code>{level}_{coarse_population_that_was_split}</code> for finer levels
-(e.g. <code>l2_Monocytic_lineage</code> ).</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    l1 <span class="op">=</span> <span class="va">l1_bounds</span>,</span>
-<span>    l2_TNK <span class="op">=</span> <span class="va">l2_tnk_bounds</span>,</span>
-<span>    l2_Monocytic_lineage <span class="op">=</span> <span class="va">l2_mono_bounds</span> </span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="create-the-scbench">Create the <code>scbench</code><a class="anchor" aria-label="anchor" href="#create-the-scbench"></a>
-</h3>
-<p>Now we have the information we need to create our benchmarking set.
-Variables are very similar to creating an <code>screference</code>, with
-the exception of <code>pop_bounds</code>, which we have explained
-above.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_scbench.html">new_scbench</a></span><span class="op">(</span><span class="va">pbmc_test</span>, </span>
-<span>                         annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>,</span>
-<span>                                       <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
-<span>                         pop_bounds <span class="op">=</span> <span class="va">pbmc_bounds</span>,</span>
-<span>                         project_name <span class="op">=</span> <span class="st">"pbmc_example"</span>,</span>
-<span>                         batch_id <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Generating new `scbench` object...</span></span>
-<span><span class="co">#&gt; Joining with `by = join_by(l1)`</span></span>
-<span><span class="va">pbmc_bench</span></span>
-<span><span class="co">#&gt; scbench object named pbmc_example with 11 reference populations and 2 levels of annotation</span></span>
-<span><span class="co">#&gt; Bounds [x] | Mixtures [ ] | Spillover [ ] | Limit of Detection [ ] | Pseudobulks [ ]</span></span></code></pre></div>
-<p>There are 3 main benchmarks tested by scbench:</p>
-<ul>
-<li><p>population</p></li>
-<li><p>limit of detection (lod)</p></li>
-<li><p>spillover</p></li>
-</ul>
-<p>The <strong>population</strong> benchmark, pseudobulk mixtures are
-created using the random proportions constrained by the bounds. These
-known proportions will be then compared with the fractions estimated by
-the deconvolution methods to assess their accuracy.</p>
-<p>The <strong>limit of detection</strong> benchmark estimates how low
-the fraction of a particular population has to be for a method to be
-able to detect it.</p>
-<p>In the <strong>spillover</strong> benchmark, cells for different
-pairs of populations on the same level are mixed with increasing
-proportions to evaluate whether the methods can distinguish them well
-from each other.</p>
-<p>The first step is to generate the mixtures for the 3 different
-methods:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="va">pbmc_bench</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/mixtures_population.html">mixtures_population</a></span><span class="op">(</span>nsamp <span class="op">=</span> <span class="fl">500</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/mixtures_lod.html">mixtures_lod</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/mixtures_spillover.html">mixtures_spillover</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Simulating spillover mixtures between population pairs...</span></span>
-<span><span class="co">#&gt; Simulating limits of detection for each population...</span></span>
-<span><span class="co">#&gt; Simulating population mixtures given bounds...</span></span></code></pre></div>
-<p>Then, we can generate pseudobulks for these mixtures by mixing 100
-random cells that correspond to the proportions given by the mixtures.
-Finally, we can call the different methods to deconvolute.</p>
-<p>As for the screference, the next steps will go a lot faster by using
-cached results:</p>
-<p>Here, we’re demonstrating with 6 methods currently implemented. For a
-full list, see <code>deconvolution_methods()</code>.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="va">pbmc_bench</span> <span class="op">|&gt;</span> </span>
-<span>    <span class="fu"><a href="../reference/pseudobulks.html">pseudobulks</a></span><span class="op">(</span>ncells <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">pbmc_ref</span>,</span>
-<span>                    methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dwls"</span>, <span class="st">"svr"</span>, <span class="st">"ols"</span>,</span>
-<span>                                <span class="st">"autogenes"</span>, <span class="st">"bisque"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="benchmarking-results">Benchmarking results<a class="anchor" aria-label="anchor" href="#benchmarking-results"></a>
-</h3>
-<p>deconverse implements many functions to produce many benchmarking
-plots, either for a single method or summarizing and comparing multiple
-methods.</p>
-<div class="section level4">
-<h4 id="evaluation-of-a-single-method">Evaluation of a single method<a class="anchor" aria-label="anchor" href="#evaluation-of-a-single-method"></a>
-</h4>
-<p>Here, we generate all evaluation plots for results coming from the
-dampened weighted least squares (<code>dwls</code>).
-<code>plt_cors_scatter</code> plots the correlations between
-deconvoluted pseudobulk portions found by the method and the true
-fractions.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cors_scatter.html">plt_cors_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-20-1.png" width="576"></p>
-<p><code>plt_lod_scatter</code> plots correlations between pseudobulk
-mixtures with increasing proportion of one population and where the
-limit of detection was established for that method.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_scatter.html">plt_lod_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-21-1.png" width="576"></p>
-<p><code>plt_spillover_scatter</code> plots the spillover between each
-pair of populations to help identify pairs of populations that will
-possibly be confused by the two methods.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_spillover_scatter.html">plt_spillover_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-22-1.png" width="624"></p>
-<p>By default, plots will show the benchmark on finest grained
-annotation available. We can verify on coarser grained by specifying the
-level:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cors_scatter.html">plt_cors_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span>, level <span class="op">=</span> <span class="st">"l1"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-23-1.png" width="480"></p>
-</div>
-<div class="section level4">
-<h4 id="comparison-of-methods"> Comparison of methods<a class="anchor" aria-label="anchor" href="#comparison-of-methods"></a>
-</h4>
-<p>There are also plots available to compare performance on the same
-data from different methods. The two main heatmaps compare correlation
-between pseudobulk mixture proportions and deconvoluted fractions by
-population, or the root mean squared error (RMSE) from predicted
-fraction and real fraction.</p>
-<div class="section level5">
-<h5 id="population">Population<a class="anchor" aria-label="anchor" href="#population"></a>
-</h5>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cor_heatmap.html">plt_cor_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, level <span class="op">=</span> <span class="st">"l2"</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-24-1.png" width="576"></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_rmse_heatmap.html">plt_rmse_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, level <span class="op">=</span> <span class="st">"l2"</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-25-1.png" width="576"></p>
-</div>
-<div class="section level5">
-<h5 id="lod-and-spillover">LoD and Spillover<a class="anchor" aria-label="anchor" href="#lod-and-spillover"></a>
-</h5>
-<p>Plots are also available for limit of detection (lower is better) and
-spillover RMSE (lower is better).</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_heatmap.html">plt_lod_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span>
-<span><span class="co">#&gt; Warning: Removed 2 rows containing missing values (`geom_text()`).</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-26-1.png" width="576"></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_spillover_heatmap.html">plt_spillover_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-27-1.png" width="576"></p>
-</div>
-</div>
+<code class="sourceCode R"><span><span class="fu">plt_comp_performance</span><span class="op">(</span><span class="va">pbmc_ref</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-10-1.png" width="480"></p>
 </div>
 </div>
 <div class="section level2">
@@ -445,7 +309,7 @@ example dataset of bulk PBMCs.</p>
 <h3 id="download-data">Download data<a class="anchor" aria-label="anchor" href="#download-data"></a>
 </h3>
 <p>First, we download the data and keep only the PBMC bulk samples.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/seandavi/GEOquery" class="external-link">GEOquery</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Setting options('download.file.method.GEOquery'='auto')</span></span>
 <span><span class="co">#&gt; Setting options('GEOquery.inmemory.gpl'=FALSE)</span></span>
@@ -469,12 +333,11 @@ example dataset of bulk PBMCs.</p>
 <p>As gene annotation was not provided, we download and add annotation
 from the same version used to pre-process the data according to their
 documentation to get gene symbols.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">biomaRt</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/grimbough/biomaRt" class="external-link">biomaRt</a></span><span class="op">)</span></span>
 <span><span class="va">ensembl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/useEnsembl.html" class="external-link">useEnsembl</a></span><span class="op">(</span>biomart <span class="op">=</span> <span class="st">"genes"</span>, </span>
 <span>                      dataset <span class="op">=</span> <span class="st">"hsapiens_gene_ensembl"</span>, </span>
-<span>                      version <span class="op">=</span> <span class="fl">92</span><span class="op">)</span></span>
-<span><span class="co"># ensembl &lt;- useDataset(ensembl, "genes")</span></span>
+<span>                      version <span class="op">=</span> <span class="fl">93</span><span class="op">)</span></span>
 <span><span class="va">gene_annot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>attributes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ensembl_gene_id_version"</span>, <span class="st">"hgnc_symbol"</span><span class="op">)</span>,</span>
 <span>                    filters <span class="op">=</span> <span class="st">"ensembl_gene_id_version"</span>,</span>
 <span>                    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span>,</span>
@@ -487,13 +350,8 @@ documentation to get gene symbols.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">gene_annot</span><span class="op">$</span><span class="va">hgnc_symbol</span></span>
 <span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">gexp</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
-<span><span class="co">#&gt;           CYFZ_PBMC  FY2H_PBMC FLWA_PBMC X453W_PBMC X684C_PBMC</span></span>
-<span><span class="co">#&gt;          50.0375670 40.8314400 47.712626 52.3128310 42.0131250</span></span>
-<span><span class="co">#&gt; A1BG      3.6204560  2.0872830  3.764533  1.6394940  3.2648960</span></span>
-<span><span class="co">#&gt; A1BG-AS1  9.4991300  4.1165860  5.104390  4.9634900 10.2330700</span></span>
-<span><span class="co">#&gt; A1CF      0.0502166  0.0194841  0.019354  0.0580105  0.0387051</span></span>
-<span><span class="co">#&gt; A2M      36.6396320 40.4233670 42.562249 67.0603100 22.8911690</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 35895    13</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-deconverse">Run deconverse<a class="anchor" aria-label="anchor" href="#run-deconverse"></a>
@@ -503,18 +361,18 @@ symbol identifiers from the reference we previously calculated.</p>
 <p><strong>Note:</strong> <strong>the <code>pbmc_bench</code> is not
 necessary for any of these steps</strong>, it only serves to benchmark
 the different methods.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">deconv_res</span> <span class="op">&lt;-</span> <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">gexp</span>, <span class="va">pbmc_ref</span>, </span>
-<span>                              methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"autogenes"</span>, <span class="st">"bisque"</span>, <span class="st">"dwls"</span>, <span class="st">"ols"</span>, <span class="st">"svr"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">deconv_res</span> <span class="op">&lt;-</span> <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">gexp</span>, <span class="va">pbmc_ref</span>,</span>
+<span>                              methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dwls"</span>, <span class="st">"ols"</span>, <span class="st">"svr"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="compare-results">Compare results<a class="anchor" aria-label="anchor" href="#compare-results"></a>
 </h3>
 <p>Now we cal compare the results at the two levels of hierarchy.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">l1_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">deconv_res</span>, <span class="st">"[["</span>, <span class="st">"l1"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu">bind_rows</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">l2_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">deconv_res</span>, <span class="st">"[["</span>, <span class="st">"l2"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu">bind_rows</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">frac_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">l1_results</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu">str_subset</span><span class="op">(</span><span class="st">"^frac"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">all_frac_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">frac_names</span>, <span class="kw">function</span><span class="op">(</span><span class="va">frac</span><span class="op">)</span> <span class="op">{</span></span>
@@ -529,8 +387,8 @@ the different methods.</p>
 <span></span>
 <span><span class="co"># install.packages("ggcorrplot")</span></span>
 <span><span class="fu">ggcorrplot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ggcorrplot/man/ggcorrplot.html" class="external-link">ggcorrplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">all_frac_mat</span><span class="op">)</span>, hc.order <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-32-1.png" width="384"></p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-15-1.png" width="384"></p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">frac_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">l2_results</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu">str_subset</span><span class="op">(</span><span class="st">"^frac"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">all_frac_mat_l2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">frac_names</span>, <span class="kw">function</span><span class="op">(</span><span class="va">frac</span><span class="op">)</span> <span class="op">{</span></span>
@@ -544,16 +402,16 @@ the different methods.</p>
 <span>    <span class="fu">column_to_rownames</span><span class="op">(</span><span class="st">"sample"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">ggcorrplot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ggcorrplot/man/ggcorrplot.html" class="external-link">ggcorrplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">all_frac_mat_l2</span>, use <span class="op">=</span> <span class="st">"pair"</span><span class="op">)</span>, hc.order <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-33-1.png" width="384"></p>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-16-1.png" width="384"></p>
 <p>We see that there is a much higher correlation between methods at the
-highest level of annotation, as expected.</p>
+coarse-level of annotation, as expected.</p>
 </div>
 <div class="section level3">
 <h3 id="check-sample-deconvolution-by-a-method">Check sample deconvolution by a method<a class="anchor" aria-label="anchor" href="#check-sample-deconvolution-by-a-method"></a>
 </h3>
 <p>We can verify the results of deconvolution by plotting the
 proportions:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span> <span class="va">pivot_dwls_l1</span> <span class="op">&lt;-</span> <span class="va">l1_results</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">method</span> <span class="op">==</span> <span class="st">"DWLS"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu">pivot_longer</span><span class="op">(</span>cols <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"frac"</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"pop"</span>, values_to <span class="op">=</span> <span class="st">"frac"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
@@ -597,7 +455,309 @@ proportions:</p>
 <span>    <span class="fu">theme</span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span>, vjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">l1_plt</span> <span class="op">/</span> <span class="va">l2_plt</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-17-1.png" width="576"></p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="scbench-run-benchmarking-of-methods-on-bespoke-data">
+<code>scbench</code>: Run benchmarking of methods on bespoke
+data<a class="anchor" aria-label="anchor" href="#scbench-run-benchmarking-of-methods-on-bespoke-data"></a>
+</h2>
+<div class="section level3">
+<h3 id="bounds">Bounds<a class="anchor" aria-label="anchor" href="#bounds"></a>
+</h3>
+<p>Now, let’s build our benchmarking set. First, we need to understand
+how the annotations relate to each other to build the “bounds” of our
+pseudobulk simulations (don’t worry, this will be further
+explained).</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_major_identities</span>, <span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_minor_identities</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                    </span></span>
+<span><span class="co">#&gt;                     Naive CD4 T CD14+ Mono Memory CD4 T   B CD8 T FCGR3A+ Mono</span></span>
+<span><span class="co">#&gt;   TNK                       269          0          202   0   117            0</span></span>
+<span><span class="co">#&gt;   B                           0          0            0 128     0            0</span></span>
+<span><span class="co">#&gt;   Monocytic_lineage           0        187            0   0     0           69</span></span>
+<span><span class="co">#&gt;                    </span></span>
+<span><span class="co">#&gt;                      NK  DC</span></span>
+<span><span class="co">#&gt;   TNK                64   0</span></span>
+<span><span class="co">#&gt;   B                   0   0</span></span>
+<span><span class="co">#&gt;   Monocytic_lineage   0  14</span></span></code></pre></div>
+<p>We can see that <code>l1 B</code> cells only correspond to
+<code>l2 B</code> cells; <code>l1 Monocytic_lineage</code> becomes
+<code>l2 CD14+ Mono</code>, <code>FCGR3A+ Mono</code> and
+<code>DC</code>; and <code>l1 TNK</code> splits into
+<code>l2 CD8 T</code>, <code>Memory CD4 T</code>,
+<code>Naive CD4 T</code> and <code>NK</code>.</p>
+<p>In PBMCs, lymphocytes make up about 70-90% of cells and monocytes
+make up 10-20%. If we want to make pseudobulk mixtures that resemble
+real PBMCs, we should include in them more lymphocytes, particularly
+more abundant T cells, than monocytes. This is what bounds are for.</p>
+<p>Bounds are used to create random mixtures with controlled
+proportions. For each population, we need a lower and upper bound. We’ll
+start with <code>l1</code> populations:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">l1_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"B"</span>, <span class="st">"Monocytic_lineage"</span>, <span class="st">"TNK"</span><span class="op">)</span>,</span>
+<span>    lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.1</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>    upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.3</span>, <span class="fl">0.85</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We’ve set that B cells will make up between 10-20% of mixtures,
+Monocytic lineage between 10-30% and TNK 50-85%. The structure of bounds
+should always be a <code>data.frame</code> with 3 columns (population,
+lower, upper). Make sure the population names are the same as the levels
+in the annotation table.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_test</span><span class="op">$</span><span class="va">Cell_major_identities</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] B                 Monocytic_lineage TNK              </span></span>
+<span><span class="co">#&gt; Levels: TNK B Monocytic_lineage</span></span></code></pre></div>
+<p>Bounds at finer levels of l2 are always given within the context of
+their coarser grained annotation. For example,
+<code>Monocytic lineage</code> will be split into 3 populations. As
+dendritic cells are more rare than monocytes, we can make them more rare
+in our mixtures as well:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">l2_mono_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>        population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD14+ Mono"</span>, <span class="st">"FCGR3A+ Mono"</span>, <span class="st">"DC"</span><span class="op">)</span>,</span>
+<span>        lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.2</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>        upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.6</span>, <span class="fl">0.2</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p>Following the same logic, we can do the bounds for the
+sub-populations of <code>TNK</code>. It’s not necessary for
+<code>B</code>, since they are not split into sub-populations in this
+annotation.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">l2_tnk_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>        population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD8 T"</span>, <span class="st">"Memory CD4 T"</span>, <span class="st">"Naive CD4 T"</span>, <span class="st">"NK"</span><span class="op">)</span>,</span>
+<span>        lower <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>        upper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p>All bounds should be put together into a list, and names should be l1
+for the coarsest-grained population and
+<code>{level}_{coarse_population_that_was_split}</code> for finer levels
+(e.g. <code>l2_Monocytic_lineage</code> ).</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_bounds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    l1 <span class="op">=</span> <span class="va">l1_bounds</span>,</span>
+<span>    l2_TNK <span class="op">=</span> <span class="va">l2_tnk_bounds</span>,</span>
+<span>    l2_Monocytic_lineage <span class="op">=</span> <span class="va">l2_mono_bounds</span> </span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="create-the-scbench">Create the <code>scbench</code><a class="anchor" aria-label="anchor" href="#create-the-scbench"></a>
+</h3>
+<p>Now we have the information we need to create our benchmarking set.
+Variables are very similar to creating an <code>screference</code>, with
+the exception of <code>pop_bounds</code>, which we have explained
+above.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_scbench.html">new_scbench</a></span><span class="op">(</span><span class="va">pbmc_test</span>, </span>
+<span>                         annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>,</span>
+<span>                                       <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
+<span>                         pop_bounds <span class="op">=</span> <span class="va">pbmc_bounds</span>,</span>
+<span>                         project_name <span class="op">=</span> <span class="st">"pbmc_example"</span>,</span>
+<span>                         batch_id <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Generating new `scbench` object...</span></span>
+<span><span class="co">#&gt; Joining with `by = join_by(l1)`</span></span>
+<span><span class="va">pbmc_bench</span></span>
+<span><span class="co">#&gt; $ref_data</span></span>
+<span><span class="co">#&gt; An object of class Seurat </span></span>
+<span><span class="co">#&gt; 13714 features across 1050 samples within 1 assay </span></span>
+<span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $project_name</span></span>
+<span><span class="co">#&gt; [1] "pbmc_example"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pop_bounds</span></span>
+<span><span class="co">#&gt; $pop_bounds$l1</span></span>
+<span><span class="co">#&gt;          population lower upper</span></span>
+<span><span class="co">#&gt; 1                 B  0.05  0.20</span></span>
+<span><span class="co">#&gt; 2 Monocytic_lineage  0.10  0.30</span></span>
+<span><span class="co">#&gt; 3               TNK  0.50  0.85</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pop_bounds$l2_TNK</span></span>
+<span><span class="co">#&gt;     population lower upper</span></span>
+<span><span class="co">#&gt; 1        CD8 T   0.2   0.5</span></span>
+<span><span class="co">#&gt; 2 Memory CD4 T   0.2   0.5</span></span>
+<span><span class="co">#&gt; 3  Naive CD4 T   0.2   0.5</span></span>
+<span><span class="co">#&gt; 4           NK   0.1   0.3</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pop_bounds$l2_Monocytic_lineage</span></span>
+<span><span class="co">#&gt;     population lower upper</span></span>
+<span><span class="co">#&gt; 1   CD14+ Mono   0.3   0.8</span></span>
+<span><span class="co">#&gt; 2 FCGR3A+ Mono   0.2   0.6</span></span>
+<span><span class="co">#&gt; 3           DC   0.0   0.2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pop_hierarchy</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 2</span></span></span>
+<span><span class="co">#&gt;   l1                l2          </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> B                 B           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Monocytic_lineage CD14+ Mono  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Monocytic_lineage FCGR3A+ Mono</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Monocytic_lineage DC          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> TNK               Naive CD4 T </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> TNK               Memory CD4 T</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> TNK               CD8 T       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> TNK               NK          </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nlevels</span></span>
+<span><span class="co">#&gt; [1] 2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $cache</span></span>
+<span><span class="co">#&gt; [1] "scbench_cache"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ref_samps</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $nsamps</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $pop_props</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $shrunk</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $deconvolution</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $metrics</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 variables: method &lt;chr&gt;, level &lt;chr&gt;, type &lt;chr&gt;, time_elapsed_s &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   peak_ram_mib &lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $status</span></span>
+<span><span class="co">#&gt; [1] "Bounds [x] | Mixtures [ ] | Spillover [ ] | Limit of Detection [ ] | Pseudobulks [ ]"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "scbench"</span></span></code></pre></div>
+<p>There are 3 main benchmarks tested by scbench:</p>
+<ul>
+<li><p>population</p></li>
+<li><p>limit of detection (lod)</p></li>
+<li><p>spillover</p></li>
+</ul>
+<p>The <strong>population</strong> benchmark, pseudobulk mixtures are
+created using the random proportions constrained by the bounds. These
+known proportions will be then compared with the fractions estimated by
+the deconvolution methods to assess their accuracy.</p>
+<p>The <strong>limit of detection</strong> benchmark estimates how low
+the fraction of a particular population has to be for a method to be
+able to detect it.</p>
+<p>In the <strong>spillover</strong> benchmark, cells for different
+pairs of populations on the same level are mixed with increasing
+proportions to evaluate whether the methods can distinguish them well
+from each other.</p>
+<p>The first step is to generate the mixtures for the 3 different
+methods:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="va">pbmc_bench</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/mixtures_population.html">mixtures_population</a></span><span class="op">(</span>nsamp <span class="op">=</span> <span class="fl">500</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/mixtures_lod.html">mixtures_lod</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/mixtures_spillover.html">mixtures_spillover</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Simulating spillover mixtures between population pairs...</span></span>
+<span><span class="co">#&gt; Simulating limits of detection for each population...</span></span>
+<span><span class="co">#&gt; Simulating population mixtures given bounds...</span></span></code></pre></div>
+<p>Then, we can generate pseudobulks for these mixtures by mixing 100
+random cells that correspond to the proportions given by the mixtures.
+Finally, we can call the different methods to deconvolute.</p>
+<p>As for the screference, the next steps will go a lot faster by using
+cached results:</p>
+<p>Here, we’re demonstrating with 6 methods currently implemented. For a
+full list, see <code>deconvolution_methods()</code>.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pseudobulks.html">pseudobulks</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, ncells <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Pseudobulks for population found in cache. Skipping...</span></span>
+<span><span class="co">#&gt; Pseudobulks for lod found in cache. Skipping...</span></span>
+<span><span class="co">#&gt; Pseudobulks for lod found in cache. Skipping...</span></span>
+<span><span class="co">#&gt; Pseudobulks for spillover found in cache. Skipping...</span></span>
+<span><span class="co">#&gt; Pseudobulks for spillover found in cache. Skipping...</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_bench</span> <span class="op">&lt;-</span> <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">pbmc_bench</span>, <span class="va">pbmc_ref</span>,</span>
+<span>                              methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dwls"</span>, <span class="st">"svr"</span>, <span class="st">"ols"</span>, <span class="st">"autogenes"</span>, <span class="st">"bisque"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="benchmarking-results">Benchmarking results<a class="anchor" aria-label="anchor" href="#benchmarking-results"></a>
+</h3>
+<p>deconverse implements many functions to produce many benchmarking
+plots, either for a single method or summarizing and comparing multiple
+methods.</p>
+<div class="section level4">
+<h4 id="evaluation-of-a-single-method">Evaluation of a single method<a class="anchor" aria-label="anchor" href="#evaluation-of-a-single-method"></a>
+</h4>
+<p>Here, we generate all evaluation plots for results coming from the
+dampened weighted least squares (<code>dwls</code>).
+<code>plt_cors_scatter</code> plots the correlations between
+deconvoluted pseudobulk portions found by the method and the true
+fractions.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cors_scatter.html">plt_cors_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-29-1.png" width="576"></p>
+<p><code>plt_lod_scatter</code> plots correlations between pseudobulk
+mixtures with increasing proportion of one population and where the
+limit of detection was established for that method.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_scatter.html">plt_lod_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-30-1.png" width="576"></p>
+<p><code>plt_spillover_scatter</code> plots the spillover between each
+pair of populations to help identify pairs of populations that will
+possibly be confused by the two methods.</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_spillover_scatter.html">plt_spillover_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-31-1.png" width="624"></p>
+<p>By default, plots will show the benchmark on finest grained
+annotation available. We can verify on coarser grained by specifying the
+level:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cors_scatter.html">plt_cors_scatter</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, method <span class="op">=</span> <span class="st">"dwls"</span>, level <span class="op">=</span> <span class="st">"l1"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-32-1.png" width="480"></p>
+</div>
+<div class="section level4">
+<h4 id="comparison-of-methods">Comparison of methods<a class="anchor" aria-label="anchor" href="#comparison-of-methods"></a>
+</h4>
+<p>There are also plots available to compare performance on the same
+data from different methods. The two main heatmaps compare correlation
+between pseudobulk mixture proportions and deconvoluted fractions by
+population, or the root mean squared error (RMSE) from predicted
+fraction and real fraction.</p>
+<div class="section level5">
+<h5 id="population">Population<a class="anchor" aria-label="anchor" href="#population"></a>
+</h5>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_cor_heatmap.html">plt_cor_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, level <span class="op">=</span> <span class="st">"l2"</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-33-1.png" width="576"></p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_rmse_heatmap.html">plt_rmse_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span>, level <span class="op">=</span> <span class="st">"l2"</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
 <p><img src="intro_pbmc_files/figure-html/unnamed-chunk-34-1.png" width="576"></p>
+</div>
+<div class="section level5">
+<h5 id="lod-and-spillover">LoD and Spillover<a class="anchor" aria-label="anchor" href="#lod-and-spillover"></a>
+</h5>
+<p>Plots are also available for limit of detection (lower is better) and
+spillover RMSE (lower is better).</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_lod_heatmap.html">plt_lod_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span>
+<span><span class="co">#&gt; Warning: Removed 2 rows containing missing values (`geom_text()`).</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-35-1.png" width="576"></p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plt_spillover_heatmap.html">plt_spillover_heatmap</a></span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span><span class="op">$</span><span class="va">heatmap</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-36-1.png" width="576"></p>
+</div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="computational-performance-1">Computational performance<a class="anchor" aria-label="anchor" href="#computational-performance-1"></a>
+</h3>
+<p>We can also plot computational performance metrics easily for
+<code>scbench</code> in the same way we did for <code>scref</code>:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">plt_comp_performance</span><span class="op">(</span><span class="va">pbmc_bench</span><span class="op">)</span></span></code></pre></div>
+<p><img src="intro_pbmc_files/figure-html/unnamed-chunk-37-1.png" width="576">
+DWLS is the slowest method of this comparison even if we have
+pre-computed the reference. Bisque is more memory hungry, but it
+computes the reference in the <code>deconvolute</code> step.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

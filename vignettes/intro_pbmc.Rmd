@@ -25,11 +25,9 @@ We'll demonstrate the functionality of `deconverse` using a PBMC dataset. This i
 
 `deconverse` implements multiple bulk deconvolution methods based on single-cell references, and enhances them by adding hierarchy-awareness. It does so by deconvoluting at the different levels of the cell type hierarchy and using results from the higher level of hierarchy to correct the lower level estimated fractions.
 
-In this example, that comes provided with the `Seurat` package, peripheral blood mononuclear cells (PBMCs) are annotated at 2 levels of hierarchy.
+In this example, that comes provided with the `Seurat` package, peripheral blood mononuclear cells (PBMCs) are annotated at 2 levels of hierarchy. Bulk RNA-seq data can be deconvoluted at both levels.
 
-Usually, we would recommend building the single-cell reference on one dataset and benchmarking on a different one. However, for this example, we will split cells into training (reference) and test (benchmarking) set. Then, we will also demonstrate deconvolution of a bulk reference.
-
-Benchmarking is not a necessary step of `deconverse`, but a feature that can be used to compare the different implemented methods in your data type and decide what levels of annotation are trustworthy.
+Usually, we would recommend building the single-cell reference on one dataset and benchmarking on a different one. However, for this example, we will split cells into training (reference) and test (benchmarking) set. Benchmarking is not a necessary step of `deconverse`, but a feature that can be used to compare the different implemented methods in your data type and decide what levels of annotation are trustworthy.
 
 ## Load PBMC dataset
 
@@ -39,8 +37,6 @@ First, we load the dataset from Seurat and look at the provided data and its two
 library(Seurat)
 library(deconverse)
 library(patchwork)
-
-data(pbmc)
 ```
 
 ```{r}
@@ -93,7 +89,7 @@ Once the object is created, it can be used to compute a reference for different 
 
 ```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To run this example much faster, download the cached results here:
-# download.file("https://xfer.curie.fr/get/nil/oD0PXAACeu0/scref_cache.zip", "scref_cache.zip")
+# download.file("http://xfer.curie.fr/get/nil/yhew87z53NM/scref_cache.zip", "scref_cache.zip")
 # unzip("scref_cache.zip")
 # file.remove("scref_cache.zip")
 ```
@@ -104,7 +100,7 @@ And then compute the references (they will be grabbed from the cache):
 # Optional: parallelize with Seurat
 library(future)
 options(future.globals.maxSize= 4000*1024^2)
-plan("multicore", workers = 4)
+plan("multicore", workers = 8)
 
 # Compute references
 pbmc_ref <- pbmc_ref |>
@@ -114,7 +110,161 @@ pbmc_ref <- pbmc_ref |>
 
 Now the single-cell reference is ready for deconvolution! First, let's benchmark it with our test set.
 
-## `scbench`: Run benchmarking on test data
+### Computational performance
+
+We can plot computational performance to compare the methods. This information is also available as a table (`pbmc_ref$metrics`)
+
+```{r fig.width=5, fig.height=4}
+plt_comp_performance(pbmc_ref)
+```
+
+## Apply to real PBMC bulk RNA-seq
+
+To demonstrate the real-life usability of deconverse, we will use an example dataset of bulk PBMCs.
+
+### Download data
+
+First, we download the data and keep only the PBMC bulk samples.
+
+```{r}
+library(GEOquery)
+gset <- getGEO("GSE107011")[[1]]
+samp_annot <- pData(gset) %>%
+    tibble() %>%
+    dplyr::filter(source_name_ch1 == "PBMCs") %>%
+    mutate(sample_name = str_remove(title, "_rep.*$"),
+           sample_name = ifelse(str_detect(sample_name, "^\\d"), paste0("X", sample_name), sample_name))
+curl::curl_download("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107011/suppl/GSE107011_Processed_data_TPM.txt.gz", "GSE107011_TPM.txt.gz")
+gexp <- read.table("GSE107011_TPM.txt.gz")
+gexp <- gexp[,samp_annot$sample_name]
+file.remove("GSE107011_TPM.txt.gz")
+```
+
+### Get gene annotation
+
+As gene annotation was not provided, we download and add annotation from the same version used to pre-process the data according to their documentation to get gene symbols.
+
+```{r}
+library(biomaRt)
+ensembl <- useEnsembl(biomart = "genes", 
+                      dataset = "hsapiens_gene_ensembl", 
+                      version = 93)
+gene_annot <- getBM(attributes = c("ensembl_gene_id_version", "hgnc_symbol"),
+                    filters = "ensembl_gene_id_version",
+                    values = rownames(gexp),
+                    ensembl)
+gene_annot <- gene_annot %>%
+    group_by(hgnc_symbol) %>%
+    slice(1)
+
+gexp <- gexp[gene_annot$ensembl_gene_id_version,]
+rownames(gexp) <- gene_annot$hgnc_symbol
+gexp <- as.matrix(gexp)
+
+dim(gexp)
+```
+
+### Run deconverse
+
+Now we can run `deconverse` on the bulk PBMC dataset with symbol identifiers from the reference we previously calculated.
+
+**Note:** **the `pbmc_bench` is not necessary for any of these steps**, it only serves to benchmark the different methods.
+
+```{r message=FALSE, warning=FALSE, resukts='hide'}
+deconv_res <- deconvolute_all(gexp, pbmc_ref,
+                              methods = c("dwls", "ols", "svr"))
+```
+
+### Compare results
+
+Now we cal compare the results at the two levels of hierarchy.
+
+```{r}
+l1_results <- lapply(deconv_res, "[[", "l1") %>% bind_rows()
+l2_results <- lapply(deconv_res, "[[", "l2") %>% bind_rows()
+```
+
+```{r fig.height=3, fig.width=4, warning=FALSE}
+frac_names <- colnames(l1_results) %>% str_subset("^frac")
+
+all_frac_mat <- lapply(frac_names, function(frac) {
+    cell_type <- str_remove(frac, "^frac_")
+    l1_results %>%
+    pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
+        mutate(sample = paste0(sample, "_", cell_type)) %>%
+    as.data.frame()
+}) %>%
+    bind_rows() %>%
+    column_to_rownames("sample")
+
+# install.packages("ggcorrplot")
+ggcorrplot::ggcorrplot(cor(all_frac_mat), hc.order = TRUE)
+```
+
+```{r fig.height=3, fig.width=4}
+frac_names <- colnames(l2_results) %>% str_subset("^frac")
+
+all_frac_mat_l2 <- lapply(frac_names, function(frac) {
+    cell_type <- str_remove(frac, "^frac_")
+    l2_results %>%
+        pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
+        mutate(sample = paste0(sample, "_", cell_type)) %>%
+        as.data.frame()
+}) %>%
+    bind_rows() %>%
+    column_to_rownames("sample")
+
+ggcorrplot::ggcorrplot(cor(all_frac_mat_l2, use = "pair"), hc.order = TRUE)
+```
+
+We see that there is a much higher correlation between methods at the coarse-level of annotation, as expected.
+
+### Check sample deconvolution by a method
+
+We can verify the results of deconvolution by plotting the proportions:
+
+```{r fig.width=6, fig.height=6.5}
+ pivot_dwls_l1 <- l1_results %>%
+    filter(method == "DWLS") %>%
+    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
+    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "Monocytic_lineage", "TNK")),
+           level = "l1")
+
+pivot_dwls_l2 <- l2_results %>%
+    filter(method == "DWLS") %>%
+    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
+    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "CD14+ Mono", "DC",
+                                                                "FCGR3A+ Mono", "CD8 T",
+                                                                "Memory CD4 T", "Naive CD4 T",
+                                                                "NK")),
+           level = "l2")
+
+pop_order <- pivot_dwls_l1 %>% filter(pop == "TNK") %>% arrange(frac) %>% pull(sample)
+
+l1_plt <- pivot_dwls_l1 %>%
+    mutate(sample = factor(sample, levels = pop_order)) %>%
+    ggplot(aes(sample, frac, fill = pop)) +
+    geom_col(color = "black", size = 0.2) +
+    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
+    ggheatmapper::theme_scatter() +
+    labs(title = "l1", y = "fraction", fill = "population") +
+    theme(axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x = element_blank())
+
+l2_plt <- pivot_dwls_l2 %>%
+    mutate(sample = factor(sample, levels = pop_order)) %>%
+    ggplot(aes(sample, frac, fill = pop)) +
+    geom_col(color = "black", size = 0.2) +
+    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
+    ggheatmapper::theme_scatter() +
+    labs(title = "l2", y = "fraction", fill = "population") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+l1_plt / l2_plt
+```
+
+## `scbench`: Run benchmarking of methods on bespoke data
 
 ### Bounds
 
@@ -133,7 +283,7 @@ Bounds are used to create random mixtures with controlled proportions. For each 
 ```{r}
 l1_bounds <- data.frame(
     population = c("B", "Monocytic_lineage", "TNK"),
-    lower = c(0.1, 0.1, 0.5),
+    lower = c(0.05, 0.1, 0.5),
     upper = c(0.2, 0.3, 0.85)
 )
 ```
@@ -217,19 +367,19 @@ As for the screference, the next steps will go a lot faster by using cached resu
 
 ```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To run this example much faster, download the cached results here:
-# download.file("https://xfer.curie.fr/get/nil/WySrQJWAGJw/scbench_cache.zip", "scbench_cache.zip")
+# download.file("http://xfer.curie.fr/get/nil/3gPPjfkeAS8/scbench_cache.zip", "scbench_cache.zip")
 # unzip("scbench_cache.zip")
 # file.remove("scbench_cache.zip")
 ```
 
 Here, we're demonstrating with 6 methods currently implemented. For a full list, see `deconvolution_methods()`.
+```{r}
+pbmc_bench <- pseudobulks(pbmc_bench, ncells = 1000)
+```
 
 ```{r results='hide', message=FALSE, warning=FALSE}
-pbmc_bench <- pbmc_bench |> 
-    pseudobulks(ncells = 1000) |>
-    deconvolute_all(pbmc_ref,
-                    methods = c("dwls", "svr", "ols",
-                                "autogenes", "bisque"))
+pbmc_bench <- deconvolute_all(pbmc_bench, pbmc_ref,
+                              methods = c("dwls", "svr", "ols", "autogenes", "bisque"))
 ```
 
 ### Benchmarking results
@@ -262,7 +412,7 @@ By default, plots will show the benchmark on finest grained annotation available
 plt_cors_scatter(pbmc_bench, method = "dwls", level = "l1")
 ```
 
-####  Comparison of methods
+#### Comparison of methods
 
 There are also plots available to compare performance on the same data from different methods. The two main heatmaps compare correlation between pseudobulk mixture proportions and deconvoluted fractions by population, or the root mean squared error (RMSE) from predicted fraction and real fraction.
 
@@ -288,149 +438,11 @@ plt_lod_heatmap(pbmc_bench)$heatmap
 plt_spillover_heatmap(pbmc_bench)$heatmap
 ```
 
-## Apply to real PBMC bulk RNA-seq
+### Computational performance 
 
-To demonstrate the real-life usability of deconverse, we will use an example dataset of bulk PBMCs.
+We can also plot computational performance metrics easily for `scbench` in the same way we did for `scref`:
 
-### Download data
-
-First, we download the data and keep only the PBMC bulk samples.
-
-```{r}
-library(GEOquery)
-gset <- getGEO("GSE107011")[[1]]
-samp_annot <- pData(gset) %>%
-    tibble() %>%
-    dplyr::filter(source_name_ch1 == "PBMCs") %>%
-    mutate(sample_name = str_remove(title, "_rep.*$"),
-           sample_name = ifelse(str_detect(sample_name, "^\\d"), paste0("X", sample_name), sample_name))
-curl::curl_download("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107011/suppl/GSE107011_Processed_data_TPM.txt.gz", "GSE107011_TPM.txt.gz")
-gexp <- read.table("GSE107011_TPM.txt.gz")
-gexp <- gexp[,samp_annot$sample_name]
-file.remove("GSE107011_TPM.txt.gz")
+```{r, fig.height=4, fig.width=6, message=FALSE}
+plt_comp_performance(pbmc_bench)
 ```
-
-### Get gene annotation
-
-As gene annotation was not provided, we download and add annotation from the same version used to pre-process the data according to their documentation to get gene symbols.
-
-```{r}
-library(biomaRt)
-ensembl <- useEnsembl(biomart = "genes", 
-                      dataset = "hsapiens_gene_ensembl", 
-                      version = 92)
-# ensembl <- useDataset(ensembl, "genes")
-gene_annot <- getBM(attributes = c("ensembl_gene_id_version", "hgnc_symbol"),
-                    filters = "ensembl_gene_id_version",
-                    values = rownames(gexp),
-                    ensembl)
-gene_annot <- gene_annot %>%
-    group_by(hgnc_symbol) %>%
-    slice(1)
-
-gexp <- gexp[gene_annot$ensembl_gene_id_version,]
-rownames(gexp) <- gene_annot$hgnc_symbol
-gexp <- as.matrix(gexp)
-
-gexp[1:5,1:5]
-```
-
-### Run deconverse
-
-Now we can run `deconverse` on the bulk PBMC dataset with symbol identifiers from the reference we previously calculated.
-
-**Note:** **the `pbmc_bench` is not necessary for any of these steps**, it only serves to benchmark the different methods.
-
-```{r message=FALSE, warning=FALSE, resukts='hide'}
-deconv_res <- deconvolute_all(gexp, pbmc_ref, 
-                              methods = c("autogenes", "bisque", "dwls", "ols", "svr"))
-```
-
-### Compare results
-
-Now we cal compare the results at the two levels of hierarchy.
-
-```{r}
-l1_results <- lapply(deconv_res, "[[", "l1") %>% bind_rows()
-l2_results <- lapply(deconv_res, "[[", "l2") %>% bind_rows()
-```
-
-```{r fig.height=3, fig.width=4, warning=FALSE}
-frac_names <- colnames(l1_results) %>% str_subset("^frac")
-
-all_frac_mat <- lapply(frac_names, function(frac) {
-    cell_type <- str_remove(frac, "^frac_")
-    l1_results %>%
-    pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
-        mutate(sample = paste0(sample, "_", cell_type)) %>%
-    as.data.frame()
-}) %>%
-    bind_rows() %>%
-    column_to_rownames("sample")
-
-# install.packages("ggcorrplot")
-ggcorrplot::ggcorrplot(cor(all_frac_mat), hc.order = TRUE)
-```
-
-```{r fig.height=3, fig.width=4}
-frac_names <- colnames(l2_results) %>% str_subset("^frac")
-
-all_frac_mat_l2 <- lapply(frac_names, function(frac) {
-    cell_type <- str_remove(frac, "^frac_")
-    l2_results %>%
-        pivot_wider(id_cols = "sample", names_from = "method", values_from = frac) %>%
-        mutate(sample = paste0(sample, "_", cell_type)) %>%
-        as.data.frame()
-}) %>%
-    bind_rows() %>%
-    column_to_rownames("sample")
-
-ggcorrplot::ggcorrplot(cor(all_frac_mat_l2, use = "pair"), hc.order = TRUE)
-```
-
-We see that there is a much higher correlation between methods at the highest level of annotation, as expected.
-
-### Check sample deconvolution by a method
-
-We can verify the results of deconvolution by plotting the proportions:
-
-```{r fig.width=6, fig.height=6.5}
- pivot_dwls_l1 <- l1_results %>%
-    filter(method == "DWLS") %>%
-    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
-    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "Monocytic_lineage", "TNK")),
-           level = "l1")
-
-pivot_dwls_l2 <- l2_results %>%
-    filter(method == "DWLS") %>%
-    pivot_longer(cols = starts_with("frac"), names_to = "pop", values_to = "frac") %>%
-    mutate(pop = str_remove(pop, "frac_") %>% factor(levels = c("B", "CD14+ Mono", "DC",
-                                                                "FCGR3A+ Mono", "CD8 T",
-                                                                "Memory CD4 T", "Naive CD4 T",
-                                                                "NK")),
-           level = "l2")
-
-pop_order <- pivot_dwls_l1 %>% filter(pop == "TNK") %>% arrange(frac) %>% pull(sample)
-
-l1_plt <- pivot_dwls_l1 %>%
-    mutate(sample = factor(sample, levels = pop_order)) %>%
-    ggplot(aes(sample, frac, fill = pop)) +
-    geom_col(color = "black", size = 0.2) +
-    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
-    ggheatmapper::theme_scatter() +
-    labs(title = "l1", y = "fraction", fill = "population") +
-    theme(axis.text.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.ticks.x = element_blank())
-
-l2_plt <- pivot_dwls_l2 %>%
-    mutate(sample = factor(sample, levels = pop_order)) %>%
-    ggplot(aes(sample, frac, fill = pop)) +
-    geom_col(color = "black", size = 0.2) +
-    geom_hline(yintercept = c(0.25, 0.5, 0.75), lty = "dashed") +
-    ggheatmapper::theme_scatter() +
-    labs(title = "l2", y = "fraction", fill = "population") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
-
-l1_plt / l2_plt
-```
+DWLS is the slowest method of this comparison even if we have pre-computed the reference. Bisque is more memory hungry, but it computes the reference in the `deconvolute` step.

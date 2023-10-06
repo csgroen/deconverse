@@ -21,6 +21,7 @@
   method = deconvolution_methods()[1],
   bulk_norm = c("none", "rpm", "proportional_fitting")[1],
   correct_finer = TRUE,
+  cache_path = ".",
   ...
 )
 }

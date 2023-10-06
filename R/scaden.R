@@ -98,7 +98,7 @@ scaden_scref <- function(scref,
 #'
 #' @param bulk_data a matrix of genes-by-samples with bulk mixtures
 #' @param scref an object of class `screference`
-#' @param res_cache_path path to cache the intermediate results
+#' @param cache_path path to cache the intermediate results
 #' @param retrain if TRUE, model is re-processed with the `bulk_data` reference and retrained
 #' @param ... passed to scaden_scref if retrain = TRUE
 #'
@@ -114,7 +114,7 @@ scaden_scref <- function(scref,
 #' See also: https://github.com/theislab/AutoGeneS
 #' @export
 scaden_deconvolute <- function(bulk_data, scref,
-                               res_cache_path = "scaden_results",
+                               cache_path = "scaden_results",
                                retrain = FALSE,
                                ...) {
     assert(class(scref) == "screference")
@@ -123,7 +123,7 @@ scaden_deconvolute <- function(bulk_data, scref,
     .install_scaden()
 
     # Train or retrain model -----------
-    cache_path <- getAbsolutePath(filePath(scref$cache, scref$project_name, "scaden"))
+    model_cache_path <- getAbsolutePath(filePath(scref$cache, scref$project_name, "scaden"))
     if(retrain | !is_cached) {
         message("-- Retraining model...")
         scaden_scref(scref,
@@ -133,22 +133,22 @@ scaden_deconvolute <- function(bulk_data, scref,
                      ...)
     }
     # Write bulk_data --------
-    dir.create(res_cache_path, showWarnings = FALSE, recursive = TRUE)
-    train_data <- fread(str_glue("{cache_path}/bulk_ex.txt"))
+    dir.create(cache_path, showWarnings = FALSE, recursive = TRUE)
+    train_data <- fread(str_glue("{model_cache_path}/bulk_ex.txt"))
     df <- bulk_data %>% as.data.frame()
     df[,"symbol"] <- rownames(df)
     df %>%
         relocate("symbol") %>%
         filter(symbol %in% train_data$symbol) %>%
-        fwrite(file = str_glue("{res_cache_path}/bulk_to_deconv.txt"), sep = "\t",
+        fwrite(file = str_glue("{cache_path}/bulk_to_deconv.txt"), sep = "\t",
                row.names = FALSE, col.names = TRUE)
 
     # Predict ------------
     use_condaenv("deconverse", required = TRUE)
     sp <- import("subprocess")
-    scaden_predict <- str_glue("cd {res_cache_path}; scaden predict --model_dir {cache_path}/model bulk_to_deconv.txt")
+    scaden_predict <- str_glue("cd {cache_path}; scaden predict --model_dir {model_cache_path}/model bulk_to_deconv.txt")
     system(scaden_predict)
-    scaden_prop <- read_tsv(str_glue("{res_cache_path}/scaden_predictions.txt"),
+    scaden_prop <- read_tsv(str_glue("{cache_path}/scaden_predictions.txt"),
                             show_col_types = FALSE) %>%
         dplyr::rename(sample = `...1`) %>%
         rename_with(~ paste0("frac_", .), .cols = -sample) %>%
@@ -161,8 +161,8 @@ scaden_deconvolute <- function(bulk_data, scref,
 .write_bulk_data <- function(scref, bulk_mat, cache_path = cache_path) {
     if(is.null(bulk_mat)) {
         set.seed(0)
-        sampled_cells <- list(sample(1:ncol(scref$seurat_obj), size = 100),
-                              sample(1:ncol(scref$seurat_obj), size = 100))
+        sampled_cells <- list(sample(1:ncol(scref$seurat_obj), size = 100, replace = TRUE),
+                              sample(1:ncol(scref$seurat_obj), size = 100, replace = TRUE))
 
         pb_mat <- sapply(sampled_cells, function(cells) {
             rowMeans(as.matrix(scref$seurat_obj@assays$RNA@counts)[,cells]) }) %>%

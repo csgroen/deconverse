@@ -120,7 +120,7 @@ mixtures_population <- function(scbench, nsamps = 1000, seed = 0) {
                 coarse_tb[,names(ln_names)[i]] * samples[[ln_names[i]]]
             }) %>% bind_cols() %>% as.data.frame()
             fine_pops <- cbind(coarse_tb[,missing_coarse], fine_pops)
-            colnames(fine_pops)[1:length(missing_coarse)] <- missing_coarse
+            if(length(missing_coarse) > 0) colnames(fine_pops)[1:length(missing_coarse)] <- missing_coarse
             #-- Fix names if changed
             name_corresps <- split(pull(scbench$pop_hierarchy, !!lev_abbr), pull(scbench$pop_hierarchy, !!upper_lev)) %>%
                 sapply(as.character)
@@ -404,7 +404,7 @@ deconvolute.scbench <- function(scbench,
         assert(scref$nlevels == scbench$nlevels)
         levels <- paste0("l", 1:scbench$nlevels)
         missing_pops <- list()
-        same_populations <- rep(0, length(levels))
+        same_populations <- rep(FALSE, length(levels))
         for(lv in 1:scref$nlevels) {
             bench_pops <- as.character(unique(scbench$pop_hierarchy[[lv]]))
             ref_pops <- as.character(unique(scref$hpop_table[[lv]]))
@@ -502,7 +502,9 @@ deconvolute.scbench <- function(scbench,
             } else if(method == "scaden") {
                 message("Running scaden...")
                 ram_change <- peakRAM(
-                    deconv_res <- scaden_deconvolute(data, ref, res_cache_paths = method_cache, ...))
+                    deconv_res <- scaden_deconvolute(data, ref, cache_path = method_cache, ...))
+            } else {
+                stop("`method` not recognized")
             }
             #-- Get metrics
             metrics <- tibble(method = method,
@@ -530,7 +532,7 @@ deconvolute.scbench <- function(scbench,
             }
             scbench[["deconvolution"]][[lv]][[type]][[method]] <-
                 scbench[["deconvolution"]][[lv]][[type]][[method]] %>%
-                select(- {{to_remove}})
+                dplyr::select(- {{to_remove}})
         }
     }
 
@@ -631,11 +633,10 @@ deconvolute.matrix <- function(bulk_data, scref,
             message("Running scaden...")
             deconv_res <- scaden_deconvolute(bulk_data, ref, ...)
         }
+        # deconv_res[sapply(deconv_res, is.na)] <- 0
         all_results[[level]] <- deconv_res
     }
-    if(length(levels) == 1 | !correct_finer) {
-        return(all_results)
-    } else {
+    if(length(levels) > 1 & correct_finer) {
         for(i in 2:length(levels)) {
             finer <- paste0("l", i); coarser <- paste0("l", i-1)
             finer_deconv <- all_results[[finer]]
@@ -647,8 +648,9 @@ deconvolute.matrix <- function(bulk_data, scref,
 
             all_results[[finer]] <- finer_deconv_norm
         }
-        return(all_results)
     }
+    return(all_results)
+
 }
 
 #' Deconvolute `scbench` object using all methods with default settings
@@ -740,6 +742,7 @@ deconvolute_all.matrix <- function(bulk_data,
 #' @importFrom yardstick rmse_vec
 #' @importFrom kableExtra kbl kable_paper kable_styling add_header_above scroll_box cell_spec spec_color
 #' @importFrom formattable color_bar
+#' @import tidyverse
 #' @export
 results.scbench <- function(scbench,
                             type = "population") {
@@ -772,7 +775,7 @@ results.scbench <- function(scbench,
             full_join(rmse_tb, by = "method") %>%
             full_join(scbench$metrics %>%
                           filter(level == {{lv}}, type == {{type}}) %>%
-                          select(method, deconv_ram = peak_ram_mib,
+                          dplyr::select(method, deconv_ram = peak_ram_mib,
                                  deconv_time_s = time_elapsed_s) %>%
                           mutate(method = deconv_methods[method]), by = "method") %>%
             rowwise() %>%
@@ -856,7 +859,7 @@ results_tidy <- function(scbench, methods = NULL, level = NULL, type = "populati
             results <- .get_spillover_results(deconv_res, spillover_tb) %>%
                 mutate(mixture = paste0(pop1, "|", pop2),
                        method = method) %>%
-                select(sample, mixture, pop1, pop2, pop1_truth, pop1_pred = pop1_estimate, method)
+                dplyr::select(sample, mixture, pop1, pop2, pop1_truth, pop1_pred = pop1_estimate, method)
         }) %>%
             bind_rows()
     } else if(type == "lod") {
@@ -865,8 +868,8 @@ results_tidy <- function(scbench, methods = NULL, level = NULL, type = "populati
             lod_tb <- .get_lod_mixtures(scbench, deconv_res, level)
             results <- .get_lod_results(deconv_res, lod_tb)
             results <- results$lod_tb %>%
-                select(sample, population, truth, pred = est, method) %>%
-                left_join(select(results$lod_annot, population, method, lod = truth),
+                dplyr::select(sample, population, truth, pred = est, method) %>%
+                left_join(dplyr::select(results$lod_annot, population, method, lod = truth),
                           by = c("population", "method")) %>%
                 relocate(method, .after = lod)
         }) %>%
@@ -1272,12 +1275,12 @@ plt_lod_heatmap <- function(scbench, level = NULL) {
     all_lod_res <- lapply(all_deconv_res, .get_lod_results, bench_tb)
     lod_tb <- lapply(all_lod_res, function(method_res) { method_res$lod_annot }) %>%
         bind_rows() %>%
-        select(population, method, lod = truth)
+        dplyr::select(population, method, lod = truth)
 
     #-- Organize for plotting
     lods <- lapply(all_lod_res, function(method_res) { method_res$lod_annot }) %>%
         bind_rows() %>%
-        select(population, method, lod = truth) %>%
+        dplyr::select(population, method, lod = truth) %>%
         pivot_wider(names_from = method, values_from = lod) %>%
         ungroup()
 
@@ -1313,6 +1316,30 @@ plt_lod_heatmap <- function(scbench, level = NULL) {
     return(list(heatmap = lod_hm, lod_table = lods))
 }
 
+#' Plot computational metrics computed during deconvolution
+#' @param scbench an `scbench` object that has been evaluated by
+#' `deconvolute`
+#' @param types type of mixtures to deconvolute. One of: `"population"`,
+#' `"spillover"` or `"lod"`. If NULL (default), all types are plotted.
+#' @param levels annotation levels to show. If NULL (default), all levels are plotted.
+#'
+#' @return a patchwork plot of time elapsed and peak RAM consumption.
+#'
+#' @import tidyverse patchwork
+#' @importFrom scales label_log
+#' @export
+#' @rdname plt_comp_performance
+plt_comp_performance.scbench <- function(scbench, types = NULL, levels = NULL) {
+    assert("metrics" %in% names(scbench))
+
+    metrics <- scbench$metrics
+
+    if(!is.null(types)) metrics <- filter(metrics, type %in% types)
+    if(!is.null(levels)) metrics <- filter(metrics, level %in% levels)
+
+    .plt_performance_bars(metrics) & facet_grid(level ~ type)
+}
+
 # Generics ------------------
 #' @export
 deconvolute <- function(x, ...) {
@@ -1333,8 +1360,8 @@ get_bounds <- function(ref_scrna, annot_ids) {
     pops <- unique(ref_scrna@meta.data[,annot_ids[1]])
     pop_bounds <- list(l1 = tibble(population = pops,
                                    lower = rep(0, length(pops)),
-                                   upper = rep(0, length(pops))))
-    if(length(annot_ids) == 1) {
+                                   upper = rep(1, length(pops))))
+    if(length(annot_ids) > 1) {
         # Add other levels
         annots <- ref_scrna@meta.data[,annot_ids]
         colnames(annots) <- paste0("l", 1:length(annot_ids))
@@ -1436,7 +1463,7 @@ print.scbench <- function(x) {
             new_hierarch <- table(ref_meta[,coarser_lev], ref_meta[,finer_lev]) %>%
                 as.data.frame() %>%
                 filter(Freq > 0) %>%
-                select(-Freq)
+                dplyr::select(-Freq)
             colnames(new_hierarch) <- c(coarser_lev, finer_lev)
             # Check splits
             split_pops <- upper_pops[sapply(split(new_hierarch[,2], new_hierarch[,1])[upper_pops], length) > 1]
@@ -1451,7 +1478,7 @@ print.scbench <- function(x) {
 
 #' @import tidyverse
 .normalize_deconvolution_by_hierarchy <- function(hierarchy_list, finer_deconv, coarser_deconv) {
-    finer_deconv <- finer_deconv %>% select(sample, starts_with("frac"), method)
+    finer_deconv <- finer_deconv %>% dplyr::select(sample, starts_with("frac"), method)
     finer_deconv_norm <- lapply(1:length(hierarchy_list), function(j) {
         coarse_col <- paste0("frac_", names(hierarchy_list)[j])
         coarse_vec <- coarser_deconv[[coarse_col]]
@@ -1477,7 +1504,7 @@ print.scbench <- function(x) {
     pops <- pop_bounds$population
     oh_pops <- dummy_cols(pop_bounds$population) %>%
         rename_with(~ str_replace(., "\\.data", "pop")) %>%
-        select(-pop) %>%
+        dplyr::select(-pop) %>%
         .[,paste0("pop_", pops)]
     A <- cbind(cbind(oh_pops, -oh_pops), total = rep(1,length(pops))) %>% t()
     rownames(A) <- NULL
@@ -1554,7 +1581,7 @@ theme_sparse <- function (...)
 #' @import tidyverse
 .get_bench_results <- function(deconv_res, bench_tb) {
     deconv_res %>%
-        select(-starts_with("model")) %>%
+        dplyr::select(-starts_with("model")) %>%
         left_join(bench_tb) %>%
         pivot_longer(cols = matches("frac|truth"), names_to = "population", values_to = "fraction") %>%
         mutate(type = ifelse(str_detect(population, "frac"), "pred", "truth"),
@@ -1685,13 +1712,13 @@ theme_sparse <- function (...)
             pop1 = str_remove(combo, "\\|.*"),
             pop2 = str_remove(combo, ".*\\|")) %>%
         relocate(sample, pop1, pop2) %>%
-        select(-combo) %>%
+        dplyr::select(-combo) %>%
         as.data.table()
 
     bench_tb[,pop1_truth := get(pop1), by = pop1]
     bench_tb[,pop2_truth := get(pop2), by = pop2]
     spillover_tb <- bench_tb %>%
-        select(sample, pop1, pop2, pop1_truth, pop2_truth) %>%
+        dplyr::select(sample, pop1, pop2, pop1_truth, pop2_truth) %>%
         as_tibble()
     return(spillover_tb)
 }
@@ -1699,7 +1726,7 @@ theme_sparse <- function (...)
 #' @import tidyverse
 .get_spillover_results <- function(deconv_res, spillover_tb) {
     spillover_deconv <- deconv_res %>%
-        select(-starts_with("model")) %>%
+        dplyr::select(-starts_with("model")) %>%
         left_join(spillover_tb, by = "sample") %>%
         mutate(pop1_est = paste0("frac_", pop1),
                pop2_est = paste0("frac_", pop2)) %>%
@@ -1708,7 +1735,7 @@ theme_sparse <- function (...)
     spillover_deconv[,pop2_estimate := get(pop2_est), by = pop2_est]
     plot_tb <- spillover_deconv %>%
         as_tibble() %>%
-        select(sample, pop1, pop2, pop1_truth, pop2_truth, pop1_estimate, pop2_estimate) %>%
+        dplyr::select(sample, pop1, pop2, pop1_truth, pop2_truth, pop1_estimate, pop2_estimate) %>%
         mutate(pop1 = factor(pop1, levels = unique(spillover_tb$pop1)),
                pop2 = factor(pop2, levels = unique(spillover_tb$pop2)))
 }
@@ -1719,7 +1746,7 @@ theme_sparse <- function (...)
     bench_tb <- scbench$mixtures$lod[[level]] %>% as.data.table()
     bench_tb[,truth := get(population), by = population]
     bench_tb <- bench_tb %>%
-        select(sample, population, truth) %>%
+        dplyr::select(sample, population, truth) %>%
         as_tibble()
 }
 #' @import tidyverse
@@ -1732,7 +1759,7 @@ theme_sparse <- function (...)
         as.data.table()
     lod_tb[,est := get(pop_name), by = pop_name]
     lod_tb <- lod_tb %>%
-        select(sample, population, method, truth, est) %>%
+        dplyr::select(sample, population, method, truth, est) %>%
         as_tibble()
 
     #-- Get blank stats
@@ -1756,14 +1783,14 @@ theme_sparse <- function (...)
     })
 
     lod_metrics <- models %>%
-        select(-model) %>%
+        dplyr::select(-model) %>%
         bind_cols(tibble(slopes = reg_slopes,
                intercepts = reg_intercepts)) %>%
         left_join(blank_metrics) %>%
         mutate(lod_min = (blank_mean + 2*blank_sd))
 
     lod_annot <- lod_tb %>%
-        left_join(select(lod_metrics, population, method, lod_min),
+        left_join(dplyr::select(lod_metrics, population, method, lod_min),
                   by = c("population", "method")) %>%
         filter(truth > 0) %>%
         mutate(find_lod = est > lod_min) %>%
@@ -1771,7 +1798,7 @@ theme_sparse <- function (...)
         group_by(population) %>%
         slice_min(truth) %>%
         mutate(label = paste0("LoD = ", signif(truth, 3))) %>%
-        select(population, method, truth, est, label)
+        dplyr::select(population, method, truth, est, label)
 
 
     return(list(lod_tb = lod_tb, lod_annot = lod_annot, blank_metrics = blank_metrics))
@@ -1815,4 +1842,25 @@ theme_sparse <- function (...)
     deconv_methods <- deconvolution_methods()
     deconv_methods <- setNames(names(deconv_methods), deconv_methods)
     return(deconv_methods)
+}
+
+.plt_performance_bars <- function(metrics) {
+    plt1 <- ggplot(metrics, aes(time_elapsed_s, method, fill = time_elapsed_s)) +
+        geom_col(color = "black", width = 0.8, lwd = 0.5) +
+        scale_fill_distiller(direction = 1) +
+        scale_x_log10(labels = label_log()) +
+        guides(fill =  "none") +
+        labs(x = "Time elapsed (s)", y = "Method",
+             subtitle = "Computational performance metrics (higher is worse)") +
+        theme_scatter()
+
+    plt2 <- ggplot(metrics, aes(peak_ram_mib, method, fill = peak_ram_mib)) +
+        geom_col(color = "black", width = 0.8, lwd = 0.5) +
+        scale_x_log10(labels = label_log()) +
+        scale_fill_distiller(palette = "Reds", direction = 1) +
+        guides(fill =  "none") +
+        labs(x = "Peak RAM (MiB)", y = "Method") +
+        theme_scatter()
+
+    plt1 / plt2
 }

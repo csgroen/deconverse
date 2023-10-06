@@ -245,8 +245,7 @@ music_basis <- function (x, non.zero = TRUE, markers = NULL, clusters, samples,
         if (verbose) {
             message("Creating Covariance Matrix...")
         }
-    }
-    else {
+    } else {
         Sigma <- sapply(unique(clusters), function(ct) {
             apply(sapply(unique(samples), function(sid) {
                 y = exprs(x)[, clusters %in% ct & samples %in%
@@ -285,11 +284,9 @@ music_basis <- function (x, non.zero = TRUE, markers = NULL, clusters, samples,
     if (!is.null(cell_size)) {
         if (!is.data.frame(cell_size)) {
             stop("cell_size paramter should be a data.frame with 1st column for cell type names and 2nd column for cell sizes")
-        }
-        else if (sum(names(M.S) %in% cell_size[, 1]) != length(names(M.S))) {
+        } else if (sum(names(M.S) %in% cell_size[, 1]) != length(names(M.S))) {
             stop("Cell type names in cell_size must match clusters")
-        }
-        else if (any(is.na(as.numeric(cell_size[, 2])))) {
+        } else if (any(is.na(as.numeric(cell_size[, 2])))) {
             stop("Cell sizes should all be numeric")
         }
         my_ms_names <- names(M.S)

@@ -133,7 +133,7 @@ paad_ref <- new_hscreference(so_paad,
 
 ```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To speed up the pipeline, we can download the cached results:
-# download.file("https://xfer.curie.fr/get/nil/m7Xl4ygpjWv/scref_cache.zip", "scref_cache.zip")
+# download.file("http://xfer.curie.fr/get/nil/yhew87z53NM/scref_cache.zip", "scref_cache.zip")
 # unzip("scref_cache.zip")
 # file.remove("scref_cache.zip")
 ```
@@ -143,10 +143,6 @@ paad_ref <- new_hscreference(so_paad,
 paad_ref <- paad_ref %>%
   compute_reference("dwls") %>%
   compute_reference("autogenes")
-```
-
-```{r}
-paad_ref
 ```
 
 ## Example benchmarking dataset: GSE154778
@@ -243,7 +239,7 @@ paad_bench <- new_scbench(so_paad2,
 
 ```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
 # To speed up computation, we can download the cache:
-# download.file("https://xfer.curie.fr/get/nil/UmcJ4yR5cfv/scbench_cache.zip", "scbench_cache.zip")
+# download.file("http://xfer.curie.fr/get/nil/3gPPjfkeAS8/scbench_cache.zip", "scbench_cache.zip")
 # unzip("scbench_cache.zip")
 # file.remove("scbench_cache.zip")
 ```
@@ -269,7 +265,7 @@ plt_cor_heatmap(paad_bench)$heatmap
 AutoGeneS is the only method capable of detecting M1 macrophages. As SVR, DWLS and OLS use the same reference, this problem probably comes from the inability of DWLS to find specific M1 markers.
 
 ```{r fig.width=5, fig.height=3}
-plt_cors_scatter(paad_bench, method = "svr")
+plt_cors_scatter(paad_bench, method = "autogenes")
 ```
 
 In spite of that, SVR still has the overall smallest estimation error:
@@ -284,7 +280,7 @@ DWLS has the best spillover performance and only fails significantly when assess
 plt_spillover_heatmap(paad_bench)$heatmap
 ```
 
-SVR has the lowest limits of detection, with the exception of M1 vs Monocytes, where it fails.
+OLS has the lowest limits of detection, with the exception of M1 vs Monocytes, where it fails.
 
 ```{r fig.width=5, fig.height=3}
 plt_lod_heatmap(paad_bench)$heatmap
@@ -295,3 +291,4 @@ If we consider it at the l2 level (where Monocytes and Macrophages are grouped t
 ```{r fig.width=5, fig.height=3}
 plt_lod_heatmap(paad_bench, level = "l2")$heatmap
 ```
+In conclusion, AutogeneS is the only method tested here capable of distinguishing M1 from other Monocytes/Macrophages, but otherwise is not the the least error prone for other populations.

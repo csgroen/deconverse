@@ -62,8 +62,7 @@ new_screference <- function(
     scref$project_name <- project_name
     scref$populations <- populations
     scref$cache <- cache_path
-    scref$metrics <- tibble(method = character(), level = character(),
-                            type = character(),
+    scref$metrics <- tibble(method = character(),
                             time_elapsed_s = numeric(),
                             peak_ram_mib = numeric())
     return(scref)
@@ -93,10 +92,12 @@ compute_reference.screference <- function(scref,
 
     #-- Get cached results
     cache_path <- getAbsolutePath(filePath(scref$cache, scref$project_name))
-    reference_res <- .scref_cache_check(cache_path, method)
+    reference_res <- .scref_cache_check(cache_path, method, "reference_res.RDS")
+    metrics <- .scref_cache_check(cache_path, method, "metrics.RDS")
 
     if(!is.null(reference_res)) {
         scref[["cached_results"]][[method]] <- reference_res
+        scref[["metrics"]] <- bind_rows(scref[["metrics"]], metrics)
         return(scref)
     }
     method_cache <- filePath(cache_path, method)
@@ -113,10 +114,12 @@ compute_reference.screference <- function(scref,
             reference_res <- dwls_scref(scref, cache_path = method_cache, ...))
     } else if(method == "bayesprism") {
         message("BayesPrism: Building reference matrix...")
-        reference_res <- bayesprism_scref(scref, cache_path = method_cache, ...)
+        ram_use <- peakRAM(
+            reference_res <- bayesprism_scref(scref, cache_path = method_cache, ...))
     } else if(method == "autogenes") {
         message("AutoGeneS: Building reference centroids...")
-        reference_res <- autogenes_scref(scref, ...)
+        ram_use <- peakRAM(
+            reference_res <- autogenes_scref(scref, ...))
     } else if (method == "scaden") {
         message("scaden: Building reference model...")
         message("--- Note: this method might need to be retrained on features shared with the target bulk matrix")
@@ -127,6 +130,12 @@ compute_reference.screference <- function(scref,
     }
     saveRDS(reference_res, file = filePath(method_cache, "reference_res.RDS"))
     scref[["cached_results"]][[method]] <- reference_res
+    metrics <- tibble(method = method,
+                      time_elapsed_s = ram_use$Elapsed_Time_sec,
+                      peak_ram_mib = ram_use$Peak_RAM_Used_MiB)
+    saveRDS(metrics, file = filePath(method_cache, "metrics.RDS"))
+    scref[["metrics"]] <- bind_rows(scref[["metrics"]], metrics)
+
     return(scref)
 }
 
@@ -234,7 +243,42 @@ compute_reference.hscreference <- function(hscref,
     assert(class(hscref) == "hscreference")
     assert(method %in% deconvolution_methods())
     hscref$screfs <- lapply(hscref$screfs, compute_reference, method = method, ...)
+    levels <- names(hscref$screfs)
+    hscref$metrics <- lapply(levels, function(lv) {
+        metrics <- hscref$screfs[[lv]]$metrics
+        metrics %>% mutate(level = lv)
+    }) %>% bind_rows() %>%
+        arrange(method, level)
+
+
     return(hscref)
+}
+
+# Plots -----------------
+#' Plot computational metrics computed during single-cell reference computation
+#' @param hscref an `h-screference` object
+#'
+#' @return a patchwork plot of time elapsed and peak RAM consumption.
+#'
+#' @import tidyverse patchwork
+#' @importFrom scales label_log
+#' @export
+#' @rdname plt_comp_performance
+plt_comp_performance.hscreference <- function(hscref) {
+    .plt_performance_bars(hscref$metrics) & facet_grid(~ level)
+}
+
+#' Plot computational metrics computed during single-cell reference computation
+#' @param scref an `screference` object
+#'
+#' @return a patchwork plot of time elapsed and peak RAM consumption.
+#'
+#' @import tidyverse patchwork
+#' @importFrom scales label_log
+#' @export
+#' @rdname plt_comp_performance
+plt_comp_performance.screference <- function(scref) {
+    .plt_performance_bars(scref$metrics)
 }
 
 # Generics ------------------
@@ -243,18 +287,24 @@ compute_reference <- function(x, ...) {
     UseMethod("compute_reference")
 }
 
+#' @export
+plt_comp_performance <- function(x, ...) {
+    UseMethod("plt_comp_performance")
+}
+
+
 # Helpers ----------------------------
-.scref_cache_check <- function(cache_path, method) {
+.scref_cache_check <- function(cache_path, method, file = "reference_res.RDS") {
     cache_method <- filePath(cache_path, method)
-    method_fname <- filePath(cache_method, "reference_res.RDS")
+    method_fname <- filePath(cache_method, file)
     if(file.exists(method_fname)) {
         message("Results found in cache, returning...")
-        reference_res <- readRDS(method_fname)
+        res <- readRDS(method_fname)
     } else {
         dir.create(cache_method, showWarnings = FALSE, recursive = TRUE)
-        reference_res <- NULL
+        res <- NULL
     }
-    return(reference_res)
+    return(res)
 }
 
 #' @importFrom data.tree as.Node
@@ -266,7 +316,7 @@ compute_reference <- function(x, ...) {
         table <- table(annots[,l_coarser], annots[,l_finer]) %>%
             as.data.frame() %>%
             filter(Freq > 0) %>%
-            select(-Freq) %>%
+            dplyr::select(-Freq) %>%
             arrange(Var1, Var2)
 
         colnames(table) <- c(l_coarser, l_finer)
@@ -311,14 +361,3 @@ print.hscreference <- function(hscref) {
 }
 
 
-#' Delete cached data on an `screference` object
-#' @param scref an `screference` object
-#' @param which a string, which cached result to delete
-#'
-#' @return screference object
-#' @export
-delete_cached <- function(scref, which) {
-    assert(class(scref) == "screference")
-    scref$cached_results[[which]] <- NULL
-    return(scref)
-}

@@ -34,7 +34,6 @@ reference:
 - contents:
     - read_h5ad
     - test_markers
-    - delete_cached
     - install_cibersortx
     - .pp_PBMCs
 - title: Data

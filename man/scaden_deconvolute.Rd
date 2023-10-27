@@ -7,7 +7,7 @@
 scaden_deconvolute(
   bulk_data,
   scref,
-  res_cache_path = "scaden_results",
+  cache_path = "scaden_results",
   retrain = FALSE,
   ...
 )
@@ -17,7 +17,7 @@ scaden_deconvolute(
 
 \item{scref}{an object of class `screference`}
 
-\item{res_cache_path}{path to cache the intermediate results}
+\item{cache_path}{path to cache the intermediate results}
 
 \item{retrain}{if TRUE, model is re-processed with the `bulk_data` reference and retrained}
 

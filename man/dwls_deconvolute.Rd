@@ -12,8 +12,9 @@ dwls_deconvolute(bulk_data, scref, ncores = 4)
 \item{scref}{an object of class `screference`}
 
 \item{n_cores}{number of cores used for computation}
-
-\item{a}{tibble with deconvolution fractions}
+}
+\value{
+a tibble with deconvolution fractions
 }
 \description{
 Dampened weighted least squares (DWLS) deconvolution of bulk data using an `screference`

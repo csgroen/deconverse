@@ -8,7 +8,7 @@ method implemented in DWLS package for methods `dwls`, `svr` and `ols`}
 dwls_scref(scref, cache_path = "dwls", logFC_cutoff = 0.5, pval_cutoff = 0.01)
 }
 \arguments{
-\item{scref}{an object of `screference}
+\item{scref}{an object of `screference`}
 
 \item{cache_path}{path to cache results}
 

@@ -7,7 +7,7 @@
 #' @param scref an object of class `screference`
 #' @param n_cores number of cores used for computation
 #'
-#' @param a tibble with deconvolution fractions
+#' @return a tibble with deconvolution fractions
 #'
 #' @import tidyverse
 #' @importFrom stats na.exclude
@@ -111,7 +111,7 @@ svr_deconvolute <- function(bulk_data, scref, ncores = 4) {
 #' Compute reference signature matrix from `screference` object using
 #' method implemented in DWLS package for methods `dwls`, `svr` and `ols`
 #'
-#' @param scref an object of `screference
+#' @param scref an object of `screference`
 #' @param cache_path path to cache results
 #' @param logFC_cutoff a float, cutoff for log fold-change from differential
 #' expression analysis between populations for selection of markers
@@ -121,6 +121,7 @@ svr_deconvolute <- function(bulk_data, scref, ncores = 4) {
 #' @import tidyverse
 #' @import Seurat
 #' @importFrom pbmcapply pbmclapply
+#' @importFrom purrr reduce
 #'
 #' @return a signature matrix
 #' @export
@@ -129,13 +130,13 @@ dwls_scref <- function(scref, cache_path = "dwls",
     scdata <- scref$seurat_obj
     id_name <- "annot_id"
 
-    #-- Get cached if exists
-    sig_fname <- filePath(cache_path, "Sig.RData")
-    if (file.exists(sig_fname)) {
-        message("-- Signature found in cache. Skipping...")
-        load(sig_fname)
-        return(Sig)
-    }
+#     #-- Get cached if exists
+#     sig_fname <- filePath(cache_path, "Sig.RData")
+#     if (file.exists(sig_fname)) {
+#         message("-- Signature found in cache. Skipping...")
+#         load(sig_fname)
+#         return(Sig)
+#     }
     #-- Run DEG analysis
     ids <- scdata@meta.data[, id_name]
     pops <- unique(ids)

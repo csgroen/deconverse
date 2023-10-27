@@ -1,7 +1,7 @@
 Package: deconverse
 Type: Package
 Title: Bulk deconvolution methods from single-cell references
-Version: 0.2.6.0
+Version: 0.2.6.1
 Author: Clarice S Groeneveld
 Maintainer: Clarice S Groeneveld <clari.groeneveld@gmail.com>
 Description: This package implements wrappers for methods of bulk RNA-seq 
@@ -9,6 +9,12 @@ Description: This package implements wrappers for methods of bulk RNA-seq
     Using pseudobulk simulations, deconverse also allows for benchmarking and 
     comparing different deconvolution methods in a context-specific manner.
 Depends: R (> 4.0), tidyverse
+Remotes:
+    csgroen/ggheatmapper,
+    jamesotto852/ggdensity,
+    Danko-Lab/BayesPrism/BayesPrism,
+    YMa-lab/CARD,
+    dmcable/spacexr
 Imports: 
     Seurat,
     ggdensity,
@@ -38,7 +44,10 @@ Imports:
     reticulate,
     snowfall,
     data.tree,
-    broom
+    broom,
+    CARD,
+    spacexr,
+    SPOTlight
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -46,5 +55,8 @@ RoxygenNote: 7.2.3
 Suggests: 
     knitr,
     rmarkdown,
-    sf
+    sf,
+    corrr, 
+    ggnetwork, 
+    network
 VignetteBuilder: knitr

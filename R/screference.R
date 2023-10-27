@@ -89,6 +89,7 @@ compute_reference.screference <- function(scref,
     #-- Checks
     assert(class(scref) == "screference")
     assert(method %in% deconvolution_methods())
+    all_methods <- deconvolution_methods()
 
     #-- Get cached results
     cache_path <- getAbsolutePath(filePath(scref$cache, scref$project_name))
@@ -125,8 +126,18 @@ compute_reference.screference <- function(scref,
         message("--- Note: this method might need to be retrained on features shared with the target bulk matrix")
         ram_use <- peakRAM(
             reference_res <- scaden_scref(scref, cache_path = method_cache, ...))
+    } else if (method == "card") {
+        message("CARD: Building `Basis` matrix...")
+        ram_use <- peakRAM(
+            reference_res <- card_scref(scref))
+    } else if (method == "spotlight") {
+        message("SPOTlight: Choosing marker genes...")
+        ram_use <- peakRAM(
+            reference_res <- spotlight_scref(scref, ...)
+        )
     } else {
-        message("No need to compute reference beforehand. Run `deconvolute` with the `scref` object directly.")
+        message(names(all_methods)[all_methods == method], ": No need to compute reference beforehand. Run `deconvolute` with the `scref` object directly.")
+        return(scref)
     }
     saveRDS(reference_res, file = filePath(method_cache, "reference_res.RDS"))
     scref[["cached_results"]][[method]] <- reference_res
@@ -159,6 +170,7 @@ compute_reference.screference <- function(scref,
 #' @return an object of class `hscreference`
 #' @importFrom data.tree as.Node
 #' @import tidyverse
+#' @importFrom purrr reduce
 #' @export
 new_hscreference <- function(
         seurat_obj,
@@ -292,13 +304,12 @@ plt_comp_performance <- function(x, ...) {
     UseMethod("plt_comp_performance")
 }
 
-
 # Helpers ----------------------------
 .scref_cache_check <- function(cache_path, method, file = "reference_res.RDS") {
     cache_method <- filePath(cache_path, method)
     method_fname <- filePath(cache_method, file)
     if(file.exists(method_fname)) {
-        message("Results found in cache, returning...")
+        if(file == "reference_res.RDS") { message("Results found in cache, returning...") }
         res <- readRDS(method_fname)
     } else {
         dir.create(cache_method, showWarnings = FALSE, recursive = TRUE)

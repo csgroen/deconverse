@@ -27,45 +27,52 @@ new_screference <- function(
         cache_path = "scref_cache",
         sample_cells = NULL,
         seed = NULL) {
-    message("Generating new `screference` object...")
-    #-- Check populations
-    colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == annot_id] <- "annot_id"
-    seurat_obj@meta.data$annot_id <- as.character(seurat_obj@meta.data$annot_id)
-    meta <- seurat_obj@meta.data
-    populations <- unique(meta$annot_id)
+    if(length(annot_id) > 1) {
+        scref <- new_hscreference(seurat_obj, annot_ids = annot_id, batch_id = batch_id,
+                         project_name = project_name, cache_path = cache_path,
+                         sample_cells = sample_cells, seed = seed)
+        return(scref)
+    } else {
+        message("Generating new `screference` object...")
+        #-- Check populations
+        colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == annot_id] <- "annot_id"
+        seurat_obj@meta.data$annot_id <- as.character(seurat_obj@meta.data$annot_id)
+        meta <- seurat_obj@meta.data
+        populations <- unique(meta$annot_id)
 
-    #-- Get random cells
-    if(!is.null(sample_cells)) {
-        message("-- Subsampling cells...")
-        assert(all(names(sample_cells) %in% unique(meta[,annot_id])))
-        if(!is.null(seed)) set.seed(seed)
-        sampled_cells <- lapply(names(sample_cells), function(pop) {
-            all_pop_cells <- meta %>%
-                filter(annot_id == pop) %>%
-                rownames()
-            assert(length(all_pop_cells) > sample_cells[pop])
-            sampled_cells <- sample(all_pop_cells, size = sample_cells[pop], replace = FALSE)
-        }) %>% reduce(c)
-        other_pops <- setdiff(populations, names(sample_cells))
-        if(length(other_pops) > 0) {
-            sampled_cells <- c(sampled_cells, rownames(meta)[meta[,"annot_id"] %in% other_pops])
+        #-- Get random cells
+        if(!is.null(sample_cells)) {
+            message("-- Subsampling cells...")
+            assert(all(names(sample_cells) %in% unique(meta[,annot_id])))
+            if(!is.null(seed)) set.seed(seed)
+            sampled_cells <- lapply(names(sample_cells), function(pop) {
+                all_pop_cells <- meta %>%
+                    filter(annot_id == pop) %>%
+                    rownames()
+                assert(length(all_pop_cells) > sample_cells[pop])
+                sampled_cells <- sample(all_pop_cells, size = sample_cells[pop], replace = FALSE)
+            }) %>% reduce(c)
+            other_pops <- setdiff(populations, names(sample_cells))
+            if(length(other_pops) > 0) {
+                sampled_cells <- c(sampled_cells, rownames(meta)[meta[,"annot_id"] %in% other_pops])
+            }
+            seurat_obj <- seurat_obj[,sampled_cells]
         }
-        seurat_obj <- seurat_obj[,sampled_cells]
-    }
-    if(!is.null(batch_id)) {
-        colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == batch_id] <- "batch_id"
-    }
+        if(!is.null(batch_id)) {
+            colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == batch_id] <- "batch_id"
+        }
 
-    #-- Make new class
-    scref <- list(seurat_obj = seurat_obj)
-    class(scref) <- "screference"
-    scref$project_name <- project_name
-    scref$populations <- populations
-    scref$cache <- cache_path
-    scref$metrics <- tibble(method = character(),
-                            time_elapsed_s = numeric(),
-                            peak_ram_mib = numeric())
-    return(scref)
+        #-- Make new class
+        scref <- list(seurat_obj = seurat_obj)
+        class(scref) <- "screference"
+        scref$project_name <- project_name
+        scref$populations <- populations
+        scref$cache <- cache_path
+        scref$metrics <- tibble(method = character(),
+                                time_elapsed_s = numeric(),
+                                peak_ram_mib = numeric())
+        return(scref)
+    }
 }
 
 #' Compute reference given a deconvolution method from an `screference` object
@@ -180,7 +187,14 @@ new_hscreference <- function(
         cache_path = "scref_cache",
         sample_cells = NULL,
         seed = NULL) {
-    assert(length(annot_ids) > 1)
+    if(length(annot_ids) == 1) {
+        warning("Using `screference` with one annotation level...")
+        new_screference(seurat_obj,
+                        annot_ids = annot_id, batch_id = batch_id, project_name = project_name,
+                        cache_path = cache_path,
+                        sample_cells = sample_cells,
+                        seed = seed)
+    }
     message("Generating new `hscreference` object...")
     n_lvl <- length(annot_ids)
 
@@ -215,7 +229,7 @@ new_hscreference <- function(
     screfs <- lapply(1:n_lvl, function(i) {
         l_scref <- new_screference(seurat_obj, annot_ids[i], batch_id = batch_id,
                                    project_name = paste0(project_name, "_l", i),
-                                   cache_path = cache_path, seed = seed)
+                                   cache_path = cache_path, seed = seed) %>% suppressMessages()
     })
     names(screfs) <- paste0("l", 1:n_lvl)
 
@@ -361,7 +375,7 @@ print.hscreference <- function(hscref) {
     cat("\n")
     cat("population annotation tree: ")
     cat("\n")
-    print(hscref$hpop_tree, limit = 15)
+    print(hscref$hpop_tree)
     cat(paste0("cached results: "))
     cat("\n")
     methods <- lapply(hscref$screfs, function(scref) names(scref$cached_results))

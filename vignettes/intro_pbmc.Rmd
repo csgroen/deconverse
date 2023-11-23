@@ -75,11 +75,11 @@ pbmc_test <- pbmc[,test_ids]
 
 ## `screference`: Build single-cell reference from train data
 
-Now, we're ready to build the reference as an `hscreference` object. We use `deconverse::new_hscreference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
+Now, we're ready to build the reference as an `hscreference` object. We use `deconverse::new_screference` and give our Seurat object `pbmc_train`, the l1 and l2 annotation variables in order, a project name, and a batch_id variable which could correspond to patient in another context, but here is just the same value for all cells.
 
 ```{r}
-pbmc_ref <- new_hscreference(pbmc_train,
-                annot_ids = c("Cell_major_identities", "Cell_minor_identities"),
+pbmc_ref <- new_screference(pbmc_train,
+                annot_id = c("Cell_major_identities", "Cell_minor_identities"),
                 project_name = "pbmc_example",
                 batch_id = "orig.ident")
 pbmc_ref
@@ -171,8 +171,7 @@ Now we can run `deconverse` on the bulk PBMC dataset with symbol identifiers fro
 **Note:** **the `pbmc_bench` is not necessary for any of these steps**, it only serves to benchmark the different methods.
 
 ```{r message=FALSE, warning=FALSE, resukts='hide'}
-deconv_res <- deconvolute_all(gexp, pbmc_ref,
-                              methods = c("dwls", "ols", "svr"))
+deconv_res <- deconvolute_all(gexp, pbmc_ref, methods = c("dwls", "ols", "svr"))
 ```
 
 ### Compare results

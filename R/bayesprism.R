@@ -55,7 +55,7 @@ bayesprism_scref <- function(scref,
                                   cell.type.labels = type_labels,
                                   cell.state.labels = state_labels,
                                   psuedo.count = pseudo_count_param,
-                                  cell.count.cutoff = 0,
+                                  cell.count.cutoff = 1,
                                   n.cores = ncores
     )
     gc()

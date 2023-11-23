@@ -29,12 +29,15 @@ reference:
     - results.scbench
     - results_tidy
     - starts_with("plt_")
+    - deconverse_results.Seurat
 - title: Extras
   desc: Other package functions
 - contents:
     - read_h5ad
     - test_markers
     - install_cibersortx
+    - adata_to_seurat
+    - seurat_to_adata
     - .pp_PBMCs
 - title: Data
   desc: Included data

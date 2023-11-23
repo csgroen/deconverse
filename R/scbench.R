@@ -1128,7 +1128,8 @@ print.scbench <- function(x) {
     }) %>% bind_cols() %>%
         tibble() %>%
         mutate(sample = finer_deconv$sample,
-               method = finer_deconv$method) %>%
+               method = finer_deconv$method,
+               across(.cols = starts_with("frac"), .fn = ~ if_else(is.na(.), 0, .))) %>%
         relocate(sample) %>%
         .[,colnames(finer_deconv)]
 

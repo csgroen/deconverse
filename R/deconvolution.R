@@ -31,7 +31,8 @@ spatial_only_methods <- function() {
 #' `"rpm"` for reads per million, `"none"` for raw counts, or `"proportional_fitting"`
 #' for using the mean library size of the pseudobulk data to normalize.
 #' @param correct_finer normalize the resulting fractions from finer-grained
-#' annotation using coarser-grained results
+#' annotation using coarser-grained results to force the sum of sub-clusters at
+#' the finer level to be equal to the fraction found for the coarser level
 #' @param ... other parameters, passed to the method wrapper, enables the user
 #' to change the method parameters. See: `deconvolute_{method}` where `{method}`
 #' is the method name in lowercase for method-specific parameters

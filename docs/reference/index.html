@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">deconverse</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.3</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,6 +81,12 @@ AutoGeneS</dd>
 BayesPrism</dd>
       </dl><dl><dt>
           
+          <code><a href="card_scref.html">card_scref()</a></code> 
+        </dt>
+        <dd>Construct the mean gene expression basis matrix (B) from `screference`
+object using the method implemented in the CARD package</dd>
+      </dl><dl><dt>
+          
           <code><a href="cibersortx_scref.html">cibersortx_scref()</a></code> 
         </dt>
         <dd>Compute reference signature matrix from `screference` object using
@@ -96,6 +102,11 @@ method implemented in DWLS package for methods `dwls`, `svr` and `ols`</dd>
           <code><a href="scaden_scref.html">scaden_scref()</a></code> 
         </dt>
         <dd>Compute reference matrix from an `screference` object using scaden (Single-cell assisted deconvolutional network)</dd>
+      </dl><dl><dt>
+          
+          <code><a href="spotlight_scref.html">spotlight_scref()</a></code> 
+        </dt>
+        <dd>Select markers for SPOTlight using an `screference`</dd>
       </dl></div><div class="section level2">
       <h2 id="benchmarking">Benchmarking<a class="anchor" aria-label="anchor" href="#benchmarking"></a></h2>
       
@@ -148,12 +159,12 @@ population mixtures in an `scbench` object</dd>
 
       <dl><dt>
           
-          <code><a href="deconvolute.html">deconvolute(<i>&lt;scbench&gt;</i>)</a></code> <code><a href="deconvolute.html">deconvolute(<i>&lt;matrix&gt;</i>)</a></code> 
+          <code><a href="deconvolute.html">deconvolute(<i>&lt;scbench&gt;</i>)</a></code> <code><a href="deconvolute.html">deconvolute(<i>&lt;matrix&gt;</i>)</a></code> <code><a href="deconvolute.html">deconvolute(<i>&lt;Seurat&gt;</i>)</a></code> 
         </dt>
         <dd>Deconvolute `scbench` object using a chosen method</dd>
       </dl><dl><dt>
           
-          <code><a href="deconvolute_all.html">deconvolute_all(<i>&lt;scbench&gt;</i>)</a></code> <code><a href="deconvolute_all.html">deconvolute_all(<i>&lt;matrix&gt;</i>)</a></code> 
+          <code><a href="deconvolute_all.html">deconvolute_all(<i>&lt;scbench&gt;</i>)</a></code> <code><a href="deconvolute_all.html">deconvolute_all(<i>&lt;matrix&gt;</i>)</a></code> <code><a href="deconvolute_all.html">deconvolute_all(<i>&lt;Seurat&gt;</i>)</a></code> 
         </dt>
         <dd>Deconvolute `scbench` object using all methods with default settings</dd>
       </dl><dl><dt>
@@ -171,6 +182,11 @@ population mixtures in an `scbench` object</dd>
           <code><a href="bisque_deconvolute.html">bisque_deconvolute()</a></code> 
         </dt>
         <dd>Bisque deconvolution of bulk data using an `screference`</dd>
+      </dl><dl><dt>
+          
+          <code><a href="card_deconvolute.html">card_deconvolute()</a></code> 
+        </dt>
+        <dd>CARD deconvolution using an `screference`</dd>
       </dl><dl><dt>
           
           <code><a href="cibersortx_deconvolute.html">cibersortx_deconvolute()</a></code> 
@@ -193,9 +209,19 @@ population mixtures in an `scbench` object</dd>
         <dd>Ordinary least squares (OLS) deconvolution of bulk data using an `screference`</dd>
       </dl><dl><dt>
           
+          <code><a href="rctd_deconvolute.html">rctd_deconvolute()</a></code> 
+        </dt>
+        <dd>RCTD deconvolution using an `screference`</dd>
+      </dl><dl><dt>
+          
           <code><a href="scaden_deconvolute.html">scaden_deconvolute()</a></code> 
         </dt>
         <dd>scaden (Single-cell assisted deconvolutional network) deconvolution of bulk data using an `screference`</dd>
+      </dl><dl><dt>
+          
+          <code><a href="spotlight_deconvolute.html">spotlight_deconvolute()</a></code> 
+        </dt>
+        <dd>SPOTlight deconvolution of spatial data using an `screference`</dd>
       </dl><dl><dt>
           
           <code><a href="svr_deconvolute.html">svr_deconvolute()</a></code> 
@@ -223,6 +249,11 @@ population mixtures in an `scbench` object</dd>
         </dt>
         <dd>Get benchmark results from `scbench` object in a tidy format, without
 performance metrics</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_colocalization.html">plt_colocalization()</a></code> 
+        </dt>
+        <dd>Plot spatial correlation of cell type proportions</dd>
       </dl><dl><dt>
           
           <code><a href="plt_comp_performance.html">plt_comp_performance(<i>&lt;scbench&gt;</i>)</a></code> <code><a href="plt_comp_performance.html">plt_comp_performance(<i>&lt;hscreference&gt;</i>)</a></code> <code><a href="plt_comp_performance.html">plt_comp_performance(<i>&lt;screference&gt;</i>)</a></code> 
@@ -254,6 +285,16 @@ of the pseudobulk where the method estimation is higher than at proportion=0 for
 each population</dd>
       </dl><dl><dt>
           
+          <code><a href="plt_method_concordance.html">plt_method_concordance()</a></code> 
+        </dt>
+        <dd>Plot percentage of concordance of major population between methods on spatial data</dd>
+      </dl><dl><dt>
+          
+          <code><a href="plt_method_correlation.html">plt_method_correlation()</a></code> 
+        </dt>
+        <dd>Plot correlation between methods on spatial data</dd>
+      </dl><dl><dt>
+          
           <code><a href="plt_population_mixtures.html">plt_population_mixtures()</a></code> 
         </dt>
         <dd>Plot sample population mixtures from an `scbench` object</dd>
@@ -265,6 +306,11 @@ each population</dd>
 true mixtures used for the pseudobulks</dd>
       </dl><dl><dt>
           
+          <code><a href="plt_spatial_correlation.html">plt_spatial_correlation()</a></code> 
+        </dt>
+        <dd>Plot spatial correlation of cell type proportions</dd>
+      </dl><dl><dt>
+          
           <code><a href="plt_spillover_heatmap.html">plt_spillover_heatmap()</a></code> 
         </dt>
         <dd>Plot heatmap summarizing spillover RMSE by population and method</dd>
@@ -274,6 +320,11 @@ true mixtures used for the pseudobulks</dd>
         </dt>
         <dd>Plot correlations between deconvolution results and spillover mixtures
 between each pair of populations</dd>
+      </dl><dl><dt>
+          
+          <code><a href="deconverse_results.html">deconverse_results(<i>&lt;Seurat&gt;</i>)</a></code> <code><a href="deconverse_results.html">deconverse_results(<i>&lt;scbench&gt;</i>)</a></code> 
+        </dt>
+        <dd>Returns feature names of `deconverse` results that are stored in the Seurat object</dd>
       </dl></div><div class="section level2">
       <h2 id="extras">Extras<a class="anchor" aria-label="anchor" href="#extras"></a></h2>
       
@@ -300,6 +351,16 @@ between each pair of populations</dd>
           <code><a href="install_cibersortx.html">install_cibersortx()</a></code> 
         </dt>
         <dd>Installs CIBERSORTx container using docker or singularity</dd>
+      </dl><dl><dt>
+          
+          <code><a href="adata_to_seurat.html">adata_to_seurat()</a></code> 
+        </dt>
+        <dd>Convert adata to a Seurat object</dd>
+      </dl><dl><dt>
+          
+          <code><a href="seurat_to_adata.html">seurat_to_adata()</a></code> 
+        </dt>
+        <dd>Convert Seurat to a adata</dd>
       </dl><dl><dt>
           
           <code><a href="dot-pp_PBMCs.html">.pp_PBMCs()</a></code> 

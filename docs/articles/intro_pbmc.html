@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">deconverse</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.3</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,6 +118,7 @@ and its two levels of annotation.</p>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2624 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"Cell_major_identities"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, label.size <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc</span>, group.by <span class="op">=</span> <span class="st">"Cell_minor_identities"</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>,  label.size <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;</span> </span>
@@ -162,18 +163,16 @@ data<a class="anchor" aria-label="anchor" href="#screference-build-single-cell-r
 </h2>
 <p>Now, we’re ready to build the reference as an
 <code>hscreference</code> object. We use
-<code><a href="../reference/new_hscreference.html">deconverse::new_hscreference</a></code> and give our Seurat object
+<code><a href="../reference/new_screference.html">deconverse::new_screference</a></code> and give our Seurat object
 <code>pbmc_train</code>, the l1 and l2 annotation variables in order, a
 project name, and a batch_id variable which could correspond to patient
 in another context, but here is just the same value for all cells.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_hscreference.html">new_hscreference</a></span><span class="op">(</span><span class="va">pbmc_train</span>,</span>
-<span>                annot_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>, <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">pbmc_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/new_screference.html">new_screference</a></span><span class="op">(</span><span class="va">pbmc_train</span>,</span>
+<span>                annot_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cell_major_identities"</span>, <span class="st">"Cell_minor_identities"</span><span class="op">)</span>,</span>
 <span>                project_name <span class="op">=</span> <span class="st">"pbmc_example"</span>,</span>
 <span>                batch_id <span class="op">=</span> <span class="st">"orig.ident"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Generating new `hscreference` object...</span></span>
-<span><span class="co">#&gt; Generating new `screference` object...</span></span>
-<span><span class="co">#&gt; Generating new `screference` object...</span></span>
 <span><span class="va">pbmc_ref</span></span>
 <span><span class="co">#&gt; $screfs</span></span>
 <span><span class="co">#&gt; $screfs$l1</span></span>
@@ -181,13 +180,14 @@ in another context, but here is just the same value for all cells.</p>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 1574 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $project_name</span></span>
 <span><span class="co">#&gt; [1] "pbmc_example_l1"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $populations</span></span>
-<span><span class="co">#&gt; [1] "Monocytic_lineage" "TNK"               "B"                </span></span>
+<span><span class="co">#&gt; [1] "TNK"               "B"                 "Monocytic_lineage"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $cache</span></span>
 <span><span class="co">#&gt; [1] "scref_cache"</span></span>
@@ -204,14 +204,15 @@ in another context, but here is just the same value for all cells.</p>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 1574 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $project_name</span></span>
 <span><span class="co">#&gt; [1] "pbmc_example_l2"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $populations</span></span>
-<span><span class="co">#&gt; [1] "CD14+ Mono"   "Naive CD4 T"  "B"            "NK"           "Memory CD4 T"</span></span>
-<span><span class="co">#&gt; [6] "FCGR3A+ Mono" "CD8 T"        "DC"          </span></span>
+<span><span class="co">#&gt; [1] "Memory CD4 T" "NK"           "CD8 T"        "Naive CD4 T"  "B"           </span></span>
+<span><span class="co">#&gt; [6] "CD14+ Mono"   "FCGR3A+ Mono" "DC"          </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $cache</span></span>
 <span><span class="co">#&gt; [1] "scref_cache"</span></span>
@@ -279,10 +280,6 @@ cache):</p>
 <span><span class="va">pbmc_ref</span> <span class="op">&lt;-</span> <span class="va">pbmc_ref</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">compute_reference</span><span class="op">(</span><span class="st">"dwls"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">compute_reference</span><span class="op">(</span><span class="st">"autogenes"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Results found in cache, returning...</span></span>
-<span><span class="co">#&gt; Results found in cache, returning...</span></span>
-<span><span class="co">#&gt; Results found in cache, returning...</span></span>
-<span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
 <span><span class="co">#&gt; Results found in cache, returning...</span></span>
@@ -362,8 +359,7 @@ symbol identifiers from the reference we previously calculated.</p>
 necessary for any of these steps</strong>, it only serves to benchmark
 the different methods.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">deconv_res</span> <span class="op">&lt;-</span> <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">gexp</span>, <span class="va">pbmc_ref</span>,</span>
-<span>                              methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dwls"</span>, <span class="st">"ols"</span>, <span class="st">"svr"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">deconv_res</span> <span class="op">&lt;-</span> <span class="fu">deconvolute_all</span><span class="op">(</span><span class="va">gexp</span>, <span class="va">pbmc_ref</span>, methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dwls"</span>, <span class="st">"ols"</span>, <span class="st">"svr"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="compare-results">Compare results<a class="anchor" aria-label="anchor" href="#compare-results"></a>
@@ -563,6 +559,7 @@ above.</p>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 1050 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $project_name</span></span>

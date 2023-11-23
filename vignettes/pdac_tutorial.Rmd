@@ -122,9 +122,9 @@ so_paad@meta.data$Celltype.minor.lineage[so_paad@meta.data$Celltype.minor.lineag
 ### Create `hscreference` with `deconverse`
 
 ```{r}
-paad_ref <- new_hscreference(so_paad, 
+paad_ref <- new_screference(so_paad, 
                                project_name = "paad_example",
-                               annot_ids = c("Celltype.malignancy", "Celltype.major.lineage", "Celltype.minor.lineage"),
+                               annot_id = c("Celltype.malignancy", "Celltype.major.lineage", "Celltype.minor.lineage"),
                                batch_id = "Patient",
                                seed = 0)
 ```

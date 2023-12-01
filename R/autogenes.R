@@ -1,5 +1,6 @@
 #' @import reticulate
 .install_autogenes <- function() {
+    .install_reticulate()
     .setup_deconv_conda()
     packages <- py_list_packages()
     if("autogenes" %in% packages$package) {
@@ -63,6 +64,7 @@ autogenes_scref <- function(scref, ngen = 500, mode = "standard",
     })
 
     #-- Centroid optimization
+    .install_reticulate()
     .install_autogenes()
     message("Optimizing markers...")
     ag <- import("autogenes")

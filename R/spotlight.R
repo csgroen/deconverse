@@ -27,6 +27,7 @@ spotlight_scref <- function(scref,
                                 min = 0.8,
                                 max = Inf),
                             downsample_n_cells = 100) {
+    .install_spotlight()
     # Preprocess --
     sce <- as.SingleCellExperiment(scref$seurat_obj)
     sce <- logNormCounts(sce)
@@ -85,6 +86,7 @@ spotlight_scref <- function(scref,
 #' @export
 spotlight_deconvolute <- function(spatial_obj, scref, model = "ns",
                                   n_top = NULL, min_prop = 0, cache_path = NULL) {
+    .install_spotlight()
     # Checks --
     assert(class(spatial_obj) == "Seurat")
     assert(class(scref) == "screference")
@@ -129,4 +131,12 @@ spotlight_deconvolute <- function(spatial_obj, scref, model = "ns",
     if(!is.null(cache_path)) saveRDS(deconv_res, file = res_file)
     return(deconv_res)
 
+}
+
+#' @importFrom remotes install_bioc
+.install_spotlight <- function() {
+    if(! all(c("scuttle", "scran", "SPOTlight") %in% installed.packages())) {
+        message("R package SPOTlight or one of its dependencies not detected. Installing...")
+        install_bioc(c("SingleCellExperiment", "scuttle", "scran", "SPOTlight"))
+    }
 }

@@ -8,6 +8,7 @@
 #' @return a Basis matrix
 #' @export
 card_scref <- function(scref) {
+    .install_card()
     # Adapt to scref input
     countMat <- as(scref$seurat_obj@assays$RNA@counts,"sparseMatrix")
     ct.select <- scref$populations
@@ -76,6 +77,7 @@ card_scref <- function(scref) {
 #' @importFrom CARD CARDref
 #' @export
 card_deconvolute <- function(spatial_obj, scref) {
+    .install_card()
     # Adapting to spatial_obj and scref input
     assert(class(scref) == "screference")
     assert(class(spatial_obj) == "Seurat")
@@ -226,3 +228,12 @@ card_deconvolute <- function(spatial_obj, scref) {
 
     return(Basis)
 }
+
+#' @importFrom remotes install_github
+.install_card <- function() {
+    if(!"CARD" %in% installed.packages()) {
+        message("R package CARD not detected. Installing...")
+        install_github('YingMa0107/CARD')
+    }
+}
+

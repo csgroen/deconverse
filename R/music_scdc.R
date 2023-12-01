@@ -5,7 +5,6 @@
 #'
 #' @return a tibble with deconvolution fractions and model metrics
 #'
-#'
 #' @importFrom Biobase ExpressionSet exprs AnnotatedDataFrame
 #' @export
 music_deconvolute <- function(bulk_data, scref) {

@@ -16,6 +16,7 @@
 #' @importFrom BisqueRNA ReferenceBasedDecomposition
 #' @export
 bisque_deconvolute <- function(bulk_data, scref) {
+    .install_bisque()
     bulk_eset <- ExpressionSet(assayData = bulk_data)
     cell_annot <- scref$seurat_obj@meta.data
     cell_annot[,"cell_id"] <- rownames(cell_annot)
@@ -35,4 +36,11 @@ bisque_deconvolute <- function(bulk_data, scref) {
         mutate(method = "Bisque")
                # residuals_norm = res$rnorm)
     return(deconv_res)
+}
+
+.install_bisque <- function() {
+    if(!"BisqueRNA" %in% installed.packages()) {
+        message("R package BisqueRNA not detected. Installing...")
+        install.packages("BisqueRNA")
+    }
 }

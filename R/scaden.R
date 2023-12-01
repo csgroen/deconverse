@@ -60,6 +60,7 @@ scaden_scref <- function(scref,
                          steps = 1000,
                          seed = 0,
                          gpu = FALSE) {
+    .install_reticulate()
     .install_scaden()
     if(gpu) .install_tensorflow()
     dir.create(cache_path, showWarnings = FALSE, recursive = TRUE)

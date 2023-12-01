@@ -11,11 +11,9 @@ Description: This package implements wrappers for methods of bulk RNA-seq
 Depends: R (> 4.0), tidyverse
 Remotes:
     csgroen/ggheatmapper,
-    jamesotto852/ggdensity,
-    Danko-Lab/BayesPrism/BayesPrism,
-    YMa-lab/CARD,
-    dmcable/spacexr
+    jamesotto852/ggdensity
 Imports: 
+    remotes,
     Seurat,
     ggdensity,
     ggpubr,
@@ -39,15 +37,8 @@ Imports:
     nnls,
     purrr,
     snow,
-    BayesPrism,
-    BisqueRNA,
-    reticulate,
-    snowfall,
     data.tree,
-    broom,
-    CARD,
-    spacexr,
-    SPOTlight
+    broom
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -55,8 +46,14 @@ RoxygenNote: 7.2.3
 Suggests: 
     knitr,
     rmarkdown,
+    reticulate,
     sf,
     corrr, 
     ggnetwork, 
-    network
+    network,
+    BayesPrism,
+    BisqueRNA,
+    spacexr,
+    CARD,
+    SPOTlight
 VignetteBuilder: knitr

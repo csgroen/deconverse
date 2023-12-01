@@ -31,6 +31,7 @@ bayesprism_scref <- function(scref,
                              pval_cutoff = 0.01, logFC_cutoff = 0.1,
                              ncores = parallel::detectCores()/2
 ) {
+    .install_bayesprism()
     assert(class(scref) == "screference")
     if(!"batch_id" %in% colnames(scref$seurat_obj@meta.data)) {
         stop("BayesPrism needs `batch_id` to be defined when creating the scref object for deconvolution.")
@@ -105,6 +106,7 @@ bayesprism_deconvolute <- function(bulk_data,
                                    outlier_fraction = 0.1,
                                    pseudo_min = 1e-8,
                                    ncores = parallel::detectCores()/2) {
+    .install_bayesprism()
     if(!is.null(cache_path)) {
         cache_fname <- ""
     }
@@ -146,4 +148,13 @@ bayesprism_deconvolute <- function(bulk_data,
     if(cache_fname != "") save(bp_tb_res, bp_res, file = cache_fname)
 
     return(bp_tb_res)
+}
+
+#' @importFrom remotes install_github
+.install_bayesprism <- function() {
+    if(!"BayesPrism" %in% installed.packages()) {
+        message("R package BayesPrism not detected. Installing...")
+        install.packages("snowfall")
+        install_github("Danko-Lab/BayesPrism/BayesPrism")
+    }
 }

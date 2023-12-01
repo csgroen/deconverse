@@ -30,6 +30,7 @@ rctd_deconvolute <- function(spatial_obj, scref, ncores = 4, gene_cutoff = 0.000
                              UMI_max = 2e+7, counts_MIN = 10, UMI_min_sigma = 300, CELL_MIN_INSTANCE = 25,
                              MAX_MULTI_TYPES = 4, CONFIDENCE_THRESHOLD = 5, DOUBLET_THRESHOLD = 20,
                              cache_path = "rctd") {
+    .install_rctd()
     assert(class(spatial_obj) == "Seurat")
     assert(class(scref) == "screference")
 
@@ -75,5 +76,12 @@ rctd_deconvolute <- function(spatial_obj, scref, ncores = 4, gene_cutoff = 0.000
     if(!is.null(cache_path)) saveRDS(deconv_res, file = res_file)
 
     return(deconv_res)
+}
 
+#' @importFrom remotes install_github
+.install_rctd <- function() {
+    if(!"spacexr" %in% installed.packages()) {
+        message("R package spacexr not detected. Installing...")
+        install_github("dmcable/spacexr")
+    }
 }

@@ -1,3 +1,10 @@
+.install_reticulate <- function() {
+    if(!"reticulate" %in% installed.packages()) {
+        message("R package reticulate not detected. Installing...")
+        install.packages("reticulate")
+    }
+}
+
 #' @import reticulate
 .setup_deconv_conda <- function() {
     envs <- conda_list()
@@ -29,6 +36,7 @@
 #'
 #' @export
 read_h5ad <- function(file, counts_layer = "counts") {
+    .install_reticulate()
     #-- Use conda deconverse environment
     .setup_deconv_conda()
     #-- Get elements of object
@@ -70,6 +78,7 @@ read_h5ad <- function(file, counts_layer = "counts") {
 #'
 #' @export
 adata_to_seurat <- function(adata, counts_layer) {
+    .install_reticulate()
     warning("This version doesn't import unstructured data saved in `uns`.")
     #-- Get meta
     message("Getting metadata...")
@@ -130,6 +139,7 @@ adata_to_seurat <- function(adata, counts_layer) {
 #'
 #' @export
 seurat_to_adata <- function(seurat_obj, counts_assay = 1) {
+    .install_reticulate()
     warning("This version doesn't import analysis results not saved as meta data")
     #-- Use conda deconverse environment
     .setup_deconv_conda()

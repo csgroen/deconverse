@@ -128,36 +128,47 @@ First, we download the data and keep only the PBMC bulk samples.
 
 ```{r}
 library(GEOquery)
+# Get dataset
 gset <- getGEO("GSE107011")[[1]]
+# Get sample annotation
 samp_annot <- pData(gset) %>%
     tibble() %>%
     dplyr::filter(source_name_ch1 == "PBMCs") %>%
     mutate(sample_name = str_remove(title, "_rep.*$"),
            sample_name = ifelse(str_detect(sample_name, "^\\d"), paste0("X", sample_name), sample_name))
+# Download gene expression matrix
 curl::curl_download("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107011/suppl/GSE107011_Processed_data_TPM.txt.gz", "GSE107011_TPM.txt.gz")
 gexp <- read.table("GSE107011_TPM.txt.gz")
 gexp <- gexp[,samp_annot$sample_name]
+# Remove gene ID version
+rownames(gexp) <- str_remove(rownames(gexp), "\\.[0-9]+$")
 file.remove("GSE107011_TPM.txt.gz")
 ```
 
+
 ### Get gene annotation
 
-As gene annotation was not provided, we download and add annotation from the same version used to pre-process the data according to their documentation to get gene symbols.
+As gene annotation was not provided, we download and add annotation used to pre-process the data according to their documentation to get gene symbols. Ideally, annotation should be from the same version of Ensembl, but to simplify, we'll use the 'latest'.
+
 
 ```{r}
 library(biomaRt)
+library(needs)
+needs::prioritize("dplyr")
 ensembl <- useEnsembl(biomart = "genes", 
-                      dataset = "hsapiens_gene_ensembl", 
-                      version = 93)
-gene_annot <- getBM(attributes = c("ensembl_gene_id_version", "hgnc_symbol"),
-                    filters = "ensembl_gene_id_version",
+                      dataset = "hsapiens_gene_ensembl")
+gene_annot <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol"),
+                    filters = "ensembl_gene_id",
                     values = rownames(gexp),
                     ensembl)
 gene_annot <- gene_annot %>%
+    as_tibble() %>%
     group_by(hgnc_symbol) %>%
-    slice(1)
+    slice(1) %>%
+    filter(hgnc_symbol != "", !is.na(hgnc_symbol))
 
-gexp <- gexp[gene_annot$ensembl_gene_id_version,]
+# Use gene symbols (like in reference)
+gexp <- gexp[gene_annot$ensembl_gene_id,]
 rownames(gexp) <- gene_annot$hgnc_symbol
 gexp <- as.matrix(gexp)
 

@@ -33,7 +33,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">deconverse</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6.4</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -310,17 +310,22 @@ example dataset of bulk PBMCs.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/seandavi/GEOquery" class="external-link">GEOquery</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Setting options('download.file.method.GEOquery'='auto')</span></span>
 <span><span class="co">#&gt; Setting options('GEOquery.inmemory.gpl'=FALSE)</span></span>
+<span><span class="co"># Get dataset</span></span>
 <span><span class="va">gset</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://seandavi.github.io/GEOquery/reference/getGEO.html" class="external-link">getGEO</a></span><span class="op">(</span><span class="st">"GSE107011"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co">#&gt; Found 1 file(s)</span></span>
 <span><span class="co">#&gt; GSE107011_series_matrix.txt.gz</span></span>
+<span><span class="co"># Get sample annotation</span></span>
 <span><span class="va">samp_annot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Biobase/man/phenoData.html" class="external-link">pData</a></span><span class="op">(</span><span class="va">gset</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu">tibble</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">source_name_ch1</span> <span class="op">==</span> <span class="st">"PBMCs"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu">mutate</span><span class="op">(</span>sample_name <span class="op">=</span> <span class="fu">str_remove</span><span class="op">(</span><span class="va">title</span>, <span class="st">"_rep.*$"</span><span class="op">)</span>,</span>
 <span>           sample_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu">str_detect</span><span class="op">(</span><span class="va">sample_name</span>, <span class="st">"^\\d"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="va">sample_name</span><span class="op">)</span>, <span class="va">sample_name</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Download gene expression matrix</span></span>
 <span><span class="fu">curl</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/curl/man/curl_download.html" class="external-link">curl_download</a></span><span class="op">(</span><span class="st">"https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107011/suppl/GSE107011_Processed_data_TPM.txt.gz"</span>, <span class="st">"GSE107011_TPM.txt.gz"</span><span class="op">)</span></span>
 <span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="st">"GSE107011_TPM.txt.gz"</span><span class="op">)</span></span>
 <span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="va">gexp</span><span class="op">[</span>,<span class="va">samp_annot</span><span class="op">$</span><span class="va">sample_name</span><span class="op">]</span></span>
+<span><span class="co"># Remove gene ID version</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu">str_remove</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span>, <span class="st">"\\.[0-9]+$"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="st">"GSE107011_TPM.txt.gz"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
@@ -328,27 +333,32 @@ example dataset of bulk PBMCs.</p>
 <h3 id="get-gene-annotation">Get gene annotation<a class="anchor" aria-label="anchor" href="#get-gene-annotation"></a>
 </h3>
 <p>As gene annotation was not provided, we download and add annotation
-from the same version used to pre-process the data according to their
-documentation to get gene symbols.</p>
+used to pre-process the data according to their documentation to get
+gene symbols. Ideally, annotation should be from the same version of
+Ensembl, but to simplify, we’ll use the ‘latest’.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/grimbough/biomaRt" class="external-link">biomaRt</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/joshkatz/needs" class="external-link">needs</a></span><span class="op">)</span></span>
+<span><span class="fu">needs</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/needs/man/prioritize.html" class="external-link">prioritize</a></span><span class="op">(</span><span class="st">"dplyr"</span><span class="op">)</span></span>
 <span><span class="va">ensembl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/useEnsembl.html" class="external-link">useEnsembl</a></span><span class="op">(</span>biomart <span class="op">=</span> <span class="st">"genes"</span>, </span>
-<span>                      dataset <span class="op">=</span> <span class="st">"hsapiens_gene_ensembl"</span>, </span>
-<span>                      version <span class="op">=</span> <span class="fl">93</span><span class="op">)</span></span>
-<span><span class="va">gene_annot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>attributes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ensembl_gene_id_version"</span>, <span class="st">"hgnc_symbol"</span><span class="op">)</span>,</span>
-<span>                    filters <span class="op">=</span> <span class="st">"ensembl_gene_id_version"</span>,</span>
+<span>                      dataset <span class="op">=</span> <span class="st">"hsapiens_gene_ensembl"</span><span class="op">)</span></span>
+<span><span class="va">gene_annot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>attributes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ensembl_gene_id"</span>, <span class="st">"hgnc_symbol"</span><span class="op">)</span>,</span>
+<span>                    filters <span class="op">=</span> <span class="st">"ensembl_gene_id"</span>,</span>
 <span>                    values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span>,</span>
 <span>                    <span class="va">ensembl</span><span class="op">)</span></span>
 <span><span class="va">gene_annot</span> <span class="op">&lt;-</span> <span class="va">gene_annot</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>    <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>    <span class="fu">group_by</span><span class="op">(</span><span class="va">hgnc_symbol</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
-<span>    <span class="fu">slice</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="fu">slice</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">hgnc_symbol</span> <span class="op">!=</span> <span class="st">""</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">hgnc_symbol</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="va">gexp</span><span class="op">[</span><span class="va">gene_annot</span><span class="op">$</span><span class="va">ensembl_gene_id_version</span>,<span class="op">]</span></span>
+<span><span class="co"># Use gene symbols (like in reference)</span></span>
+<span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="va">gexp</span><span class="op">[</span><span class="va">gene_annot</span><span class="op">$</span><span class="va">ensembl_gene_id</span>,<span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">gene_annot</span><span class="op">$</span><span class="va">hgnc_symbol</span></span>
 <span><span class="va">gexp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">gexp</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 35895    13</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 40655    13</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-deconverse">Run deconverse<a class="anchor" aria-label="anchor" href="#run-deconverse"></a>

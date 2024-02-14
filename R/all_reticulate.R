@@ -113,11 +113,7 @@ adata_to_seurat <- function(adata, counts_layer) {
     seu <- CreateSeuratObject(counts = layers[[counts_layer]])
     added_meta <- setdiff(colnames(cell_meta), colnames(seu@meta.data))
     seu@meta.data <- left_df_join(seu@meta.data, cell_meta[,added_meta])
-    if(str_detect(as.character(packageVersion("Seurat")), "^5")) {
-        seu@assays$RNA@meta.data <- gene_meta
-    } else {
-        seu@assays$RNA@meta.features <- gene_meta
-    }
+    seu@assays$RNA@meta.features <- gene_meta
 
     for(ly in other_layers) {
         seu@assays[[ly]] <- layers[[ly]]
@@ -154,15 +150,9 @@ seurat_to_adata <- function(seurat_obj, counts_assay = 1) {
     sp <- import("scipy.sparse")
     pd <- import("pandas")
     message("Converting Seurat to anndata...")
-    if(str_detect(as.character(packageVersion("Seurat")), "^5")) {
-        adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(seurat_obj@assays[[counts_assay]]@counts))),
-                            obs = r_to_py(seurat_obj@meta.data),
-                            var = r_to_py(seurat_obj@assays[[1]]@meta.data))
-    } else {
-        adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(seurat_obj@assays[[counts_assay]]@counts))),
-                            obs = r_to_py(seurat_obj@meta.data),
-                            var = r_to_py(seurat_obj@assays[[1]]@meta.features))
-    }
+    adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(seurat_obj@assays[[counts_assay]]@counts))),
+                        obs = r_to_py(seurat_obj@meta.data),
+                        var = r_to_py(seurat_obj@assays[[1]]@meta.features))
 
     return(adata)
 

@@ -92,7 +92,7 @@ adata_to_seurat <- function(adata, counts_layer) {
 
     #-- Get data
     message("Getting counts...")
-    layers <- dict(adata$layers)
+    layers <- adata$layers$as_dict()
     if(length(layers) == 0) {
         mat <- as.matrix(adata$X)
         mat <- base::t(mat)

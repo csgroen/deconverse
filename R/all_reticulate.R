@@ -152,7 +152,7 @@ seurat_to_adata <- function(seurat_obj, counts_assay = 1) {
     message("Converting Seurat to anndata...")
     adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(seurat_obj@assays[[counts_assay]]@counts))),
                         obs = r_to_py(seurat_obj@meta.data),
-                        var = r_to_py(seurat_obj@assays[[1]]@meta.features))
+                        var = r_to_py(seurat_obj@assays[[1]]@meta.data))
 
     return(adata)
 

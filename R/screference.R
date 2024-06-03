@@ -10,7 +10,7 @@
 #' of batch are patient ID, study ID, etc.
 #' @param project_name a string indicating the project name, used for caching
 #' @param cache_path path to the directory where results will be cached.
-#' @param sample_cells NULL or a list with how many cells to randomly sub-sample of each
+#' @param sample_cells NULL or a named vector with how many cells to randomly sub-sample of each
 #' population. Sub-sampling can make the object significantly smaller and accelerate
 #' downstream computation, but make the results less accurate.
 #' @param seed an integer representing a "seed", for reproducibility of sub-sampling.
@@ -35,22 +35,22 @@ new_screference <- function(
     } else {
         message("Generating new `screference` object...")
         #-- Check populations
-        colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == annot_id] <- "annot_id"
-        seurat_obj@meta.data$annot_id <- as.character(seurat_obj@meta.data$annot_id)
+        colnames(seurat_obj@meta.data)[colnames(seurat_obj[[]]) == annot_id] <- "annot_id"
+        seurat_obj[[]]$annot_id <- as.character(seurat_obj[[]]$annot_id)
         meta <- seurat_obj@meta.data
         populations <- unique(meta$annot_id)
 
         #-- Get random cells
         if(!is.null(sample_cells)) {
             message("-- Subsampling cells...")
-            assert(all(names(sample_cells) %in% unique(meta[,annot_id])))
+            assert(all(names(sample_cells) %in% unique(meta$annot_id)))
             if(!is.null(seed)) set.seed(seed)
             sampled_cells <- lapply(names(sample_cells), function(pop) {
                 all_pop_cells <- meta %>%
                     filter(annot_id == pop) %>%
                     rownames()
                 assert(length(all_pop_cells) > sample_cells[pop])
-                sampled_cells <- sample(all_pop_cells, size = sample_cells[pop], replace = FALSE)
+                sampled_cells <- sample(all_pop_cells, size = sample_cells[[pop]], replace = FALSE)
             }) %>% reduce(c)
             other_pops <- setdiff(populations, names(sample_cells))
             if(length(other_pops) > 0) {
@@ -59,7 +59,7 @@ new_screference <- function(
             seurat_obj <- seurat_obj[,sampled_cells]
         }
         if(!is.null(batch_id)) {
-            colnames(seurat_obj@meta.data)[colnames(seurat_obj@meta.data) == batch_id] <- "batch_id"
+            colnames(seurat_obj[[]])[colnames(seurat_obj[[]]) == batch_id] <- "batch_id"
         }
 
         #-- Make new class
@@ -141,6 +141,11 @@ compute_reference.screference <- function(scref,
         message("SPOTlight: Choosing marker genes...")
         ram_use <- peakRAM(
             reference_res <- spotlight_scref(scref, ...)
+        )
+    } else if (method == "cell2location") {
+        message("Cell2location: Fitting model...")
+        ram_use <- peakRAM(
+            reference_res <- cell2location_scref(scref, cache_path = method_cache, ...)
         )
     } else {
         message(names(all_methods)[all_methods == method], ": No need to compute reference beforehand. Run `deconvolute` with the `scref` object directly.")
@@ -234,7 +239,7 @@ new_hscreference <- function(
     names(screfs) <- paste0("l", 1:n_lvl)
 
     #-- Get population hierarchy
-    annots <- seurat_obj@meta.data[,annot_ids]
+    annots <- seurat_obj[[]][,annot_ids]
     colnames(annots) <- paste0("l", 1:n_lvl)
     hpops <- .get_pop_hierarchy(annots)
 
@@ -358,9 +363,9 @@ plt_comp_performance <- function(x, ...) {
     return(list(hpop_tree = hpop_tree, hpop_table = hpop_table))
 }
 
-
+#' @rdname print
 #' @export
-print.screference <- function(scref) {
+print.screference <- function(scref, ...) {
     cat(str_glue("screference object named `{scref$project_name}` with {ncol(scref$seurat_obj)} cells and {length(scref$populations)} populations"))
     cat("\n")
     cat(paste0("populations: ", paste(scref$populations, collapse = ", ")))
@@ -369,8 +374,9 @@ print.screference <- function(scref) {
     cat(paste0(names(scref$cached_results), collapse = ", "))
 }
 
+#' @rdname print
 #' @export
-print.hscreference <- function(hscref) {
+print.hscreference <- function(hscref, ...) {
     cat(str_glue("h-screference object named `{hscref$project_name}` with {hscref$nlevels} levels of annotation from {ncol(hscref$screfs[[1]]$seurat_obj)} cells"))
     cat("\n")
     cat("population annotation tree: ")
@@ -384,5 +390,4 @@ print.hscreference <- function(hscref) {
         cat("\n")
     }
 }
-
 

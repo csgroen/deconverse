@@ -12,8 +12,8 @@ music_deconvolute <- function(bulk_data, scref) {
         stop("MuSiC needs `batch_id` to be defined when creating the scref object for deconvolution.")
     }
     est_prop <- music_prop(bulk.eset = ExpressionSet(assayData = bulk_data),
-                           sc.eset = ExpressionSet(as.matrix(scref$seurat_obj@assays$RNA@counts),
-                                                   phenoData = AnnotatedDataFrame(scref$seurat_obj@meta.data)),
+                           sc.eset = ExpressionSet(as.matrix(GetAssayData(scref$seurat_obj, "RNA", "counts")),
+                                                   phenoData = AnnotatedDataFrame(scref$seurat_obj[[]])),
                            clusters = "annot_id",
                            samples = "batch_id")
     gc()

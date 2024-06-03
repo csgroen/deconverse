@@ -17,7 +17,7 @@
         message("-- tensorflow-gpu found")
     } else {
         message("-- Installing tensorflow-gpu...")
-        conda_install("deconverse", "tensorflow-gpu")
+        conda_install("deconverse", "tensorflow-gpu==2.11")
     }
 }
 
@@ -59,7 +59,7 @@ scaden_scref <- function(scref,
                          learning_rate = 0.0001,
                          steps = 1000,
                          seed = 0,
-                         gpu = FALSE) {
+                         gpu = TRUE) {
     .install_reticulate()
     .install_scaden()
     if(gpu) .install_tensorflow()
@@ -69,7 +69,7 @@ scaden_scref <- function(scref,
     feats <- .write_bulk_data(scref, bulk_mat, cache_path = cache_path)
 
     # Write reference data -------
-    data.table::fwrite(t(as.matrix(scref$seurat_obj@assays$RNA@counts))[,feats],
+    data.table::fwrite(t(as.matrix(GetAssayData(scref$seurat_obj, "RNA", "counts")))[,feats],
            file = str_glue("{cache_path}/data_counts.txt"),
            sep = "\t", row.names = FALSE)
     tibble(Celltype = scref$seurat_obj$annot_id) %>% write_tsv(str_glue("{cache_path}/data_celltypes.txt"))
@@ -166,7 +166,7 @@ scaden_deconvolute <- function(bulk_data, scref,
                               sample(1:ncol(scref$seurat_obj), size = 100, replace = TRUE))
 
         pb_mat <- sapply(sampled_cells, function(cells) {
-            rowMeans(as.matrix(scref$seurat_obj@assays$RNA@counts)[,cells]) }) %>%
+            rowMeans(as.matrix(GetAssayData(scref$seurat_obj, "RNA", "counts"))[,cells]) }) %>%
             as.data.frame()
         pb_mat[,"symbol"] <- rownames(pb_mat)
         pb_mat <- relocate(pb_mat, "symbol")
@@ -175,7 +175,7 @@ scaden_deconvolute <- function(bulk_data, scref,
                col.names = TRUE, row.names = FALSE)
         features = pb_mat$symbol
     } else {
-        features <- intersect(rownames(scref$seurat_obj@assays$RNA@counts), rownames(bulk_mat))
+        features <- intersect(rownames(scref$seurat_obj), rownames(bulk_mat))
         bulk_mat2 <- bulk_mat[features,] %>%
             as.data.frame()
         bulk_mat2[,"symbol"] <- rownames(bulk_mat2)

@@ -145,11 +145,9 @@ rownames(gexp) <- str_remove(rownames(gexp), "\\.[0-9]+$")
 file.remove("GSE107011_TPM.txt.gz")
 ```
 
-
 ### Get gene annotation
 
 As gene annotation was not provided, we download and add annotation used to pre-process the data according to their documentation to get gene symbols. Ideally, annotation should be from the same version of Ensembl, but to simplify, we'll use the 'latest'.
-
 
 ```{r}
 library(biomaRt)
@@ -274,7 +272,7 @@ l2_plt <- pivot_dwls_l2 %>%
 l1_plt / l2_plt
 ```
 
-## `scbench`: Run benchmarking of methods on bespoke data
+## `scbench`: Run benchmarking of methods on user provided data
 
 ### Bounds
 
@@ -298,7 +296,7 @@ l1_bounds <- data.frame(
 )
 ```
 
-We've set that B cells will make up between 10-20% of mixtures, Monocytic lineage between 10-30% and TNK 50-85%. The structure of bounds should always be a `data.frame` with 3 columns (population, lower, upper). Make sure the population names are the same as the levels in the annotation table.
+We've set that B cells will make up between 10-20% of mixtures, Monocytic lineage between 10-30% and TNK 50-85%. The structure of bounds should always be a `data.frame` with 3 columns (population, lower, upper) where lower/upper refers to lower and upper bounds. Make sure the population names are the same as the levels in the annotation table.
 
 ```{r}
 unique(pbmc_test$Cell_major_identities)
@@ -334,6 +332,8 @@ pbmc_bounds <- list(
 )
 ```
 
+Note that if not provided, `scbench` will consider all bounds as 0-1.
+
 ### Create the `scbench`
 
 Now we have the information we need to create our benchmarking set. Variables are very similar to creating an `screference`, with the exception of `pop_bounds`, which we have explained above.
@@ -342,7 +342,7 @@ Now we have the information we need to create our benchmarking set. Variables ar
 pbmc_bench <- new_scbench(pbmc_test, 
                          annot_ids = c("Cell_major_identities",
                                        "Cell_minor_identities"),
-                         pop_bounds = pbmc_bounds,
+                         # pop_bounds = pbmc_bounds,
                          project_name = "pbmc_example",
                          batch_id = "orig.ident")
 pbmc_bench
@@ -383,6 +383,7 @@ As for the screference, the next steps will go a lot faster by using cached resu
 ```
 
 Here, we're demonstrating with 6 methods currently implemented. For a full list, see `deconvolution_methods()`.
+
 ```{r}
 pbmc_bench <- pseudobulks(pbmc_bench, ncells = 1000)
 ```
@@ -448,11 +449,12 @@ plt_lod_heatmap(pbmc_bench)$heatmap
 plt_spillover_heatmap(pbmc_bench)$heatmap
 ```
 
-### Computational performance 
+### Computational performance
 
 We can also plot computational performance metrics easily for `scbench` in the same way we did for `scref`:
 
 ```{r, fig.height=4, fig.width=6, message=FALSE}
 plt_comp_performance(pbmc_bench)
 ```
+
 DWLS is the slowest method of this comparison even if we have pre-computed the reference. Bisque is more memory hungry, but it computes the reference in the `deconvolute` step.

@@ -989,6 +989,8 @@ results <- function(x, ...) {
 get_deconv_populations <- function(x, ...) {
     UseMethod("get_deconv_populations")
 }
+
+
 # Helpers ------------
 
 #' @export
@@ -1052,8 +1054,9 @@ librarySizeNormalization <- function(data, factor = 10^6) {
     data/(colSums(data)/factor)
 }
 
+#' @rdname print
 #' @export
-print.scbench <- function(x) {
+print.scbench <- function(x, ...) {
     cat(str_glue("scbench object named {x$project_name} with {length(unique(unlist(x$pop_hierarchy)))} reference populations and {x$nlevels} levels of annotation"))
     cat("\n")
     cat(x$status)

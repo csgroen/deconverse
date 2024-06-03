@@ -60,7 +60,7 @@ autogenes_scref <- function(scref, ngen = 500, mode = "standard",
     var_feats <- VariableFeatures(scdata)
     cells_in_pops <- split(colnames(scdata), scdata$annot_id)
     centroids <- sapply(cells_in_pops, function(cells) {
-        rowMeans(scdata@assays$RNA@data[var_feats,cells])
+        rowMeans(GetAssayData(scdata, "RNA", "data")[var_feats,cells])
     })
 
     #-- Centroid optimization

@@ -61,6 +61,10 @@ cibersortx_scref <- function(scref,
     ref <- scref$seurat_obj
     ref_pops <- scref$populations
 
+    if(is.null(username) | is.null(token)) {
+        stop("`username` and `token` are required to run the CIBERSORTx docker.")
+    }
+
     #-- Create file structure
     dir.create(cache_path, recursive = TRUE, showWarnings = FALSE)
     path <- getAbsolutePath(cache_path)
@@ -78,14 +82,14 @@ cibersortx_scref <- function(scref,
     #----- Generate data matrix
     ref <- NormalizeData(ref, normalization.method = "RC", scale.factor = 10^5)
     if(is.null(ref_pops)) {
-        ref_pops <- unique(ref@meta.data[,"annot_id"])
+        ref_pops <- unique(ref[[]][,"annot_id"])
     }
     gc()
-    cell_annots <- ref@meta.data %>%
+    cell_annots <- ref[[]] %>%
         dplyr::filter(annot_id %in% ref_pops) %>%
         rownames_to_column("id") %>%
         pull(id, annot_id)
-    ref_data <- ref@assays$RNA@data[,cell_annots] %>% as.matrix() %>% as.data.frame()
+    ref_data <- GetAssayData(ref, "RNA", "data")[,cell_annots] %>% as.matrix() %>% as.data.frame()
     colnames(ref_data) <- names(cell_annots)
     data.table::fwrite(ref_data, file = ref_fname, sep = "\t",
                            row.names = TRUE, col.names = TRUE)

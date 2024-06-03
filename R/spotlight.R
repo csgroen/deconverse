@@ -17,8 +17,6 @@
 #' @import SingleCellExperiment
 #' @importFrom SummarizedExperiment colData
 #' @importFrom Seurat as.SingleCellExperiment
-#' @importFrom scuttle logNormCounts
-#' @importFrom scran modelGeneVar getTopHVGs scoreMarkers
 #' @export
 spotlight_scref <- function(scref,
                             n_hvg = 3000,
@@ -81,7 +79,6 @@ spotlight_scref <- function(scref,
 #'
 #' @return a tibble with deconvolution fractions
 #'
-#' @importFrom SPOTlight SPOTlight
 #' @import tidyverse
 #' @export
 spotlight_deconvolute <- function(spatial_obj, scref, model = "ns",
@@ -139,4 +136,7 @@ spotlight_deconvolute <- function(spatial_obj, scref, model = "ns",
         message("R package SPOTlight or one of its dependencies not detected. Installing...")
         install_bioc(c("SingleCellExperiment", "scuttle", "scran", "SPOTlight"))
     }
+    require(SPOTlight)
+    require(scuttle)
+    require(scran)
 }

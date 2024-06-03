@@ -10,7 +10,7 @@
 card_scref <- function(scref) {
     .install_card()
     # Adapt to scref input
-    countMat <- as(scref$seurat_obj@assays$RNA@counts,"sparseMatrix")
+    countMat <- as(GetAssayData(scref$seurat_obj, "RNA", slot = "counts"),"sparseMatrix")
     ct.select <- scref$populations
     sample.id <- scref$seurat_obj$batch_id
     ct.id <- scref$seurat_obj$annot_id
@@ -84,7 +84,7 @@ card_deconvolute <- function(spatial_obj, scref) {
     assert("Spatial" %in% names(spatial_obj@assays))
 
     B <- scref$cached_results$card[,scref$populations]
-    spatial_count <- spatial_obj@assays$Spatial@counts
+    spatial_count <- GetAssayData(spatial_obj, "Spatial", "counts")
     ct.select <- scref$populations
 
     commonGene <- intersect(rownames(spatial_count),rownames(B))
@@ -105,7 +105,7 @@ card_deconvolute <- function(spatial_obj, scref) {
     B = B[rownames(B) %in% rownames(spatial_count_norm),]
     B = B[match(rownames(spatial_count_norm),rownames(B)),]
     #### spatial location
-    spatial_location = spatial_obj@images$slice1@coordinates[,2:3]
+    spatial_location = GetTissueCoordinates(spatial_obj)[,1:2]
     #--- adapt
     colnames(spatial_location) <- c("x","y")
     #-- end

@@ -21,8 +21,6 @@
 #' See also: https://github.com/Danko-Lab/BayesPrism
 #'
 #' @import tidyverse
-#' @importFrom BayesPrism cleanup.genes select.gene.type get.exp.stat select.marker
-#' @import snowfall
 #' @export
 bayesprism_scref <- function(scref,
                              cache_path = "bayes_prism",
@@ -33,11 +31,11 @@ bayesprism_scref <- function(scref,
 ) {
     .install_bayesprism()
     assert(class(scref) == "screference")
-    if(!"batch_id" %in% colnames(scref$seurat_obj@meta.data)) {
+    if(!"batch_id" %in% colnames(scref$seurat_obj[[]])) {
         stop("BayesPrism needs `batch_id` to be defined when creating the scref object for deconvolution.")
     }
     #-- Clean matrix with BayesPrism suggestions
-    sc_mat_filt <- t(as.matrix(scref$seurat_obj@assays$RNA@counts)) |>
+    sc_mat_filt <- t(as.matrix(GetAssayData(scref$seurat_obj, "RNA", "counts"))) |>
         cleanup.genes(input.type = "count.matrix",
                       species = "hs",
                       gene.group = c("Rb","Mrp","other_Rb","chrM","MALAT1","chrX","chrY"),
@@ -55,7 +53,7 @@ bayesprism_scref <- function(scref,
     diff_exp_stat <- get.exp.stat(sc_mat_filt,
                                   cell.type.labels = type_labels,
                                   cell.state.labels = state_labels,
-                                  psuedo.count = pseudo_count_param,
+                                  pseudo.count = pseudo_count_param,
                                   cell.count.cutoff = 1,
                                   n.cores = ncores
     )
@@ -95,8 +93,6 @@ bayesprism_scref <- function(scref,
 #' See also: https://github.com/Danko-Lab/BayesPrism
 #'
 #' @import tidyverse
-#' @importFrom BayesPrism new.prism run.prism get.fraction
-#' @importFrom snow setDefaultClusterOptions
 #'
 #' @export
 bayesprism_deconvolute <- function(bulk_data,
@@ -107,7 +103,7 @@ bayesprism_deconvolute <- function(bulk_data,
                                    pseudo_min = 1e-8,
                                    ncores = parallel::detectCores()/2) {
     .install_bayesprism()
-    if(!is.null(cache_path)) {
+    if(is.null(cache_path)) {
         cache_fname <- ""
     }
     else {
@@ -157,4 +153,6 @@ bayesprism_deconvolute <- function(bulk_data,
         install.packages("snowfall")
         install_github("Danko-Lab/BayesPrism/BayesPrism")
     }
+    require(BayesPrism)
+    require(snow)
 }

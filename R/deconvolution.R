@@ -4,7 +4,8 @@ deconvolution_methods <- function() {
     c("OLS" = "ols", "DWLS" = "dwls", "SVR" = "svr", "CIBERSORTx" =  "cibersortx",
       "MuSiC" = "music", "BayesPrism" = "bayesprism", "Bisque" = "bisque",
       "AutoGeneS" = "autogenes", "scaden" = "scaden", "CARD" = "card", "RCTD" = "rctd",
-      "SPOTlight" = "spotlight")
+      "SPOTlight" = "spotlight", "cell2location" = "cell2location",
+      "SpaCET" = "spacet")
 }
 
 #' @export
@@ -14,9 +15,15 @@ bulk_deconvolution_methods <- function() {
 
 #' @export
 spatial_only_methods <- function() {
-    c("CARD" = "card", "RCTD" = "rctd", "SPOTlight" = "spotlight")
+    c("CARD" = "card", "RCTD" = "rctd", "SPOTlight" = "spotlight",
+      "Cell2location" = "cell2location", "SpaCET" = "spacet")
 }
 
+#' @export
+precompute_reference <- function() {
+    c("cibersortx", "dwls", "ols", "svr", "bayesprism", "autogenes",
+      "scaden", "spotlight", "cell2location")
+}
 
 #' Deconvolute `scbench` object using a chosen method
 #'
@@ -49,13 +56,14 @@ deconvolute.scbench <- function(scbench,
                                 method = deconvolution_methods()[1],
                                 type = c("population", "spillover", "lod")[1],
                                 pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
-                                correct_finer = TRUE,
+                                correct_finer = FALSE,
                                 ...) {
     #-- Error handling
     # assert(class(scbench) == "scbench")
     assert(class(scref) %in% c("screference", "hscreference"))
     assert(!is.null(scbench$pseudobulk_counts[[type]]))
     assert(method %in% bulk_deconvolution_methods())
+
 
     #-- Reference picking
     if(class(scref) == "hscreference") {
@@ -84,7 +92,7 @@ deconvolute.scbench <- function(scbench,
     } else {
         if(scbench$nlevels > 1) {
             match <- sapply(1:scbench$nlevels, function(i) {
-                all(scbench$pop_hierarchy[[i]] %in% scref$populations)
+                all(unique(scbench$pop_hierarchy[[i]]) %in% scref$populations)
             }) %>% which()
             level_match <- paste0("l", match[length(match)])
 
@@ -92,6 +100,15 @@ deconvolute.scbench <- function(scbench,
             levels <- level_match
         } else {
             levels <- "l1"
+        }
+        missing_pops <- list()
+        bench_pops <- as.character(unique(scbench$pop_hierarchy[[levels]]))
+        ref_pops <- scref$populations
+        missing_pops[[levels]] <- setdiff(ref_pops, bench_pops)
+        same_populations <- all(bench_pops %in% intersect(bench_pops, ref_pops))
+
+        if(!same_populations) {
+            stop("Not all populations in `scbench` are contained in the reference `scref`.")
         }
     }
     for(level in levels) {
@@ -240,7 +257,7 @@ deconvolute.scbench <- function(scbench,
 deconvolute.matrix <- function(bulk_data, scref,
                                method = deconvolution_methods()[1],
                                bulk_norm = c("none", "rpm", "proportional_fitting")[1],
-                               correct_finer = TRUE,
+                               correct_finer = FALSE,
                                cache_path = ".",
                                ...) {
     assert(class(scref) %in% c("screference", "hscreference"))
@@ -287,7 +304,7 @@ deconvolute.matrix <- function(bulk_data, scref,
             deconv_res <- svr_deconvolute(bulk_data, ref, ...)
         } else if(method == "bayesprism") {
             message("Running BayesPrism...")
-            deconv_res <- bayesprism_deconvolute(bulk_data, ref, cache_path = ".", ...)
+            deconv_res <- bayesprism_deconvolute(bulk_data, ref, cache_path = cache_path, ...)
         } else if(method == "bisque") {
             message("Running Bisque...")
             deconv_res <- bisque_deconvolute(bulk_data, ref)
@@ -348,7 +365,7 @@ deconvolute.matrix <- function(bulk_data, scref,
 deconvolute.Seurat <- function(spatial_obj, scref,
                                method = deconvolution_methods()[1],
                                normalization_method = c("none", "rp10k", "proportional_fitting")[1],
-                               correct_finer = TRUE,
+                               correct_finer = FALSE,
                                cache_path = "deconverse_cache",
                                ...) {
     assert(class(scref) %in% c("screference", "hscreference"))
@@ -382,6 +399,19 @@ deconvolute.Seurat <- function(spatial_obj, scref,
                 message("Running SPOTlight")
                 method_cache <- filePath(cache_path, "spotlight", level)
                 deconv_res <- spotlight_deconvolute(spatial_obj, ref, cache_path = method_cache, ...)
+            } else if (method == "cell2location") {
+                message("Running Cell2Location")
+                deconv_res <- cell2location_deconvolute(spatial_obj, scref, ...)
+            } else if(method == "spacet") {
+                message("Running SpaCET...")
+                n_lvl <- which(colnames(scref$hpop_table) == level)
+                if (n_lvl > 1) {
+                    sc_lineage_tree <- split(scref$hpop_table[,n_lvl], scref$hpop_table[,n_lvl-1])
+                } else {
+                    sc_lineage_tree <- split(ref$populations, ref$populations)
+                }
+                deconv_res <- spacet_deconvolute(spatial_obj, scref,
+                                                 sc_lineage_tree = sc_lineage_tree, ...)
             }
             all_results[[level]] <- deconv_res
         }
@@ -392,8 +422,8 @@ deconvolute.Seurat <- function(spatial_obj, scref,
             bulk_data <- librarySizeNormalization(pb, mean(colSums(pb)))
         }
 
-        bulk_data <- spatial_obj@assays$Spatial@counts
-        all_results <- deconvolute(as.matrix(bulk_data), scref,
+        bulk_data <- spatial_obj[["Spatial"]]$counts
+        all_results <- deconvolute(as.matrix(bulk_data), scref, method = method,
                                    correct_finer = FALSE, bulk_norm = FALSE, ...)
     }
     if(length(levels) > 1 & correct_finer) {
@@ -427,7 +457,7 @@ deconvolute.Seurat <- function(spatial_obj, scref,
         level_name <- if_else(length(levels) > 1, paste0("_", lv), "")
 
         pop_names <- str_remove(colnames(deconv_df), paste0("^", method_name, level_name, "_"))
-        main_pop_df <- data.frame(main_pop = pop_names[apply(deconv_df, 1, which.max)],
+        main_pop_df <- data.frame(main_pop = pop_names[apply(as.matrix(deconv_df), 1, function(i) { which.max(i)[1] })],
                                   row.names = rownames(deconv_df))
         colnames(main_pop_df) <- paste0(method_name, level_name, "_", "major_population")
         return(main_pop_df)
@@ -576,16 +606,16 @@ deconvolute_all.Seurat <- function(spatial_obj,
 #' @return a vector of strings correspoding to features in the Seurat object.
 #' @rdname deconverse_results
 #' @export
-deconverse_results.Seurat <- function(spatial_obj, method = NULL, major_population = FALSE, raw_results = FALSE) {
+deconverse_results.Seurat <- function(spatial_obj, method = NULL,
+                                      major_population = FALSE, raw_results = FALSE) {
     deconv_res <- spatial_obj@tools$deconverse
-
-    if(raw_results) {
-        return(deconv_res)
-    }
 
     assert(method %in% names(deconv_res))
     assert(length(method) == 1)
 
+    if(raw_results) {
+        return(deconv_res)
+    }
     if(is.null(method)) {
         if(major_population) {
             results <- deconv_res$major_population
@@ -594,7 +624,6 @@ deconverse_results.Seurat <- function(spatial_obj, method = NULL, major_populati
         }
         return(results)
     }
-
     method_name <- names(deconvolution_methods())[deconvolution_methods() == method]
     if(!is.null(deconv_res)) {
         if(major_population) {
@@ -614,3 +643,4 @@ deconverse_results.Seurat <- function(spatial_obj, method = NULL, major_populati
 deconverse_results <- function(x, ...) {
     UseMethod("deconverse_results")
 }
+

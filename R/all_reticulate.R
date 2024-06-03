@@ -10,11 +10,12 @@
     envs <- conda_list()
     if(!"deconverse" %in% envs$name) {
         message("Creating `deconverse` conda environment...")
-        conda_create("deconverse",
-                     python_version = "3.9",
-                     packages = c("numpy", "numexpr>2.7.3", "pandas",
+        conda_create(envname = "deconverse",
+                     python_version = "3.10",
+                     packages = c("numpy", "numexpr", "pandas",
                                   "scipy", "scikit-learn", "matplotlib",
-                                  "anndata>0.8", "scanpy"), pip = TRUE, forge = FALSE)
+                                  "anndata", "scanpy"),
+                     channel = "pip")
     } else {
         message("Using `deconverse` conda environment...")
     }
@@ -35,10 +36,11 @@
 #' @importFrom reticulate import
 #'
 #' @export
-read_h5ad <- function(file, counts_layer = "counts") {
+read_h5ad <- function(file, counts_layer = "counts", ...) {
     .install_reticulate()
     #-- Use conda deconverse environment
     .setup_deconv_conda()
+    file <- normalizePath(file)
     #-- Get elements of object
     ad <- import("anndata")
     if(str_detect(file, "h5ad$")) {
@@ -52,8 +54,7 @@ read_h5ad <- function(file, counts_layer = "counts") {
         stop("`file` is not of format `h5ad`.")
     }
     adata$obs_names_make_unique()
-
-    seu <- adata_to_seurat(adata, counts_layer)
+    seu <- adata_to_seurat(adata, counts_layer, ...)
     return(seu)
 
 }
@@ -70,14 +71,14 @@ read_h5ad <- function(file, counts_layer = "counts") {
 #' @param counts_layer layer of adata containing counts information
 #'
 #' @import Matrix SeuratObject
-#' @importFrom Seurat CreateSeuratObject PercentageFeatureSet
+#' @importFrom Seurat CreateSeuratObject PercentageFeatureSet AddMetaData
 #' @importFrom dplyr relocate
 #' @importFrom stringr str_detect
 #'
 #' @return A converted Seurat object
 #'
 #' @export
-adata_to_seurat <- function(adata, counts_layer) {
+adata_to_seurat <- function(adata, counts_layer, ...) {
     .install_reticulate()
     warning("This version doesn't import unstructured data saved in `uns`.")
     #-- Get meta
@@ -86,6 +87,7 @@ adata_to_seurat <- function(adata, counts_layer) {
     cell_meta$barcode <- rownames(cell_meta)
     cell_meta <- relocate(cell_meta, "barcode")
     gene_meta <- adata$var
+
 
     cell_names <- rownames(cell_meta)
     gene_names <- rownames(gene_meta)
@@ -110,14 +112,12 @@ adata_to_seurat <- function(adata, counts_layer) {
     }
     other_layers <- setdiff(names(layers), counts_layer)
     message("Creating Seurat object...")
-    seu <- CreateSeuratObject(counts = layers[[counts_layer]])
-    added_meta <- setdiff(colnames(cell_meta), colnames(seu@meta.data))
-    seu@meta.data <- left_df_join(seu@meta.data, cell_meta[,added_meta])
-    seu@assays$RNA@meta.data <- gene_meta
+    seu <- CreateSeuratObject(counts = layers[[counts_layer]], meta.data = cell_meta, ...)
+    seu@assays$RNA[[]] <- gene_meta
 
-    for(ly in other_layers) {
-        seu@assays[[ly]] <- layers[[ly]]
-    }
+    # for(ly in other_layers) {
+    #     seu@assays[[ly]] <- layers[[ly]]
+    # }
 
     seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^MT-")
     gc()
@@ -140,7 +140,7 @@ adata_to_seurat <- function(adata, counts_layer) {
 #' @return A converted adata object
 #'
 #' @export
-seurat_to_adata <- function(seurat_obj, counts_assay = 1) {
+seurat_to_adata <- function(seurat_obj, assay = "RNA") {
     .install_reticulate()
     warning("This version doesn't import analysis results not saved as meta data")
     #-- Use conda deconverse environment
@@ -149,10 +149,28 @@ seurat_to_adata <- function(seurat_obj, counts_assay = 1) {
     ad <- import("anndata")
     sp <- import("scipy.sparse")
     pd <- import("pandas")
+
     message("Converting Seurat to anndata...")
-    adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(seurat_obj@assays[[counts_assay]]@counts))),
-                        obs = r_to_py(seurat_obj@meta.data),
-                        var = r_to_py(seurat_obj@assays[[1]]@meta.features))
+    meta_feats <- seurat_obj@assays[[assay]][[]]
+    if(ncol(meta_feats)==0){
+        meta_feats <- data.frame(feat_name=rownames(meta_feats),
+                   row.names=rownames(meta_feats))
+    }
+    adata <- ad$AnnData(X = sp$csr_matrix(t(as.matrix(GetAssayData(seurat_obj, assay)))),
+                        obs = r_to_py(seurat_obj[[]]),
+                        var = r_to_py(meta_feats))
+
+    img <- try(GetImage(seurat_obj), silent = TRUE)
+    if(class(img)[1]!="try-error") {
+        obsm <- r_to_py(list(spatial = r_to_py(as.matrix(GetTissueCoordinates(seurat_obj)[,c("x","y")]))))
+
+        uns <- r_to_py(list(spatial = r_to_py(list('test' =
+                                      list(images = r_to_py(seurat_obj@images$slice1@image),
+                                           scalefactors = r_to_py(seurat_obj@images$slice1@scale.factors))))))
+        adata$obsm <- r_to_py(obsm)
+        adata$uns <- r_to_py(uns)
+    }
+
 
     return(adata)
 

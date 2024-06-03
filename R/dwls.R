@@ -138,8 +138,16 @@ dwls_scref <- function(scref, cache_path = "dwls",
 #         return(Sig)
 #     }
     #-- Run DEG analysis
-    ids <- scdata@meta.data[, id_name]
+    ids <- scdata[[]][, id_name]
     pops <- unique(ids)
+
+    pp_data <- GetAssayData(scdata, "RNA", "data")
+    if(nrow(pp_data) == 0) {
+        warning("Reference needs to be pre-processed using Seurat before computing DWLS reference.
+                Normalizing with default values...")
+        scdata <- NormalizeData(scdata)
+    }
+
     .dwls_DEAnalysis(scdata, id_name, pops, cache_path)
 
     #-- Load DEG results
@@ -162,7 +170,7 @@ dwls_scref <- function(scref, cache_path = "dwls",
             rownames(deg_table)[1:min(G, nrow(deg_table))]
         }) %>% reduce(c)
         Genes <- na.exclude(unique(Genes))
-        ExprSubset <- scdata@assays$RNA@data[Genes, ]
+        ExprSubset <- GetAssayData(scdata, "RNA", "data")[Genes, ]
         Sig <- sapply(pops, function(pop) {
             Matrix::rowMeans(ExprSubset[, ids == pop])
         })
@@ -175,7 +183,7 @@ dwls_scref <- function(scref, cache_path = "dwls",
         rownames(deg_table)[1:min(G, nrow(deg_table))]
     }) %>% reduce(c)
     Genes <- unique(Genes)
-    ExprSubset <- scdata@assays$RNA@data[Genes, ]
+    ExprSubset <- GetAssayData(scdata, "RNA", "data")[Genes, ]
     Sig <- sapply(pops, function(pop) {
         Matrix::rowMeans(ExprSubset[, ids == pop])
     })

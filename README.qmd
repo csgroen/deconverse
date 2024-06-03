@@ -28,13 +28,6 @@ remotes::install_github("csgroen/deconverse")
 
 `docker` or `singularity` must be available to run some deconvolution methods. To install, see: <https://docs.docker.com/get-docker/>
 
-To install CIBERSORTx docker, run:
-
-```{r eval=FALSE}
-library(deconverse)
-install_cibersortx()
-```
-
 ## Usage
 
 [See the PBMC tutorial to get started](http://csgroen.github.io/deconverse/articles/intro_pbmc.html).

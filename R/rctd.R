@@ -21,7 +21,6 @@
 #' @return a tibble with deconvolution fractions
 #'
 #' @import tidyverse
-#' @importFrom spacexr SpatialRNA Reference create.RCTD run.RCTD
 #' @importFrom R.utils filePath
 #'
 #' @export
@@ -45,12 +44,14 @@ rctd_deconvolute <- function(spatial_obj, scref, ncores = 4, gene_cutoff = 0.000
         deconv_res <- readRDS(res_file)
         return(deconv_res)
     }
+    cts <- GetAssayData(spatial_obj, "Spatial", "counts")
 
-    query <- SpatialRNA(coords = spatial_obj@images[[1]]@coordinates[,2:3],
-                        counts = spatial_obj@assays$Spatial@counts)
-    reference <- Reference(counts = scref$seurat_obj@assays$RNA@counts,
-                           cell_types = structure(factor(scref$seurat_obj@meta.data$annot_id),
-                                                  names = colnames(scref$seurat_obj)))
+    query <- SpatialRNA(coords = GetTissueCoordinates(spatial_obj)[,1:2],
+                        counts = cts)
+    ref_cts <- as.matrix(scref$seurat_obj[["RNA"]]$counts)
+    reference <- Reference(counts =  ref_cts,
+                           cell_types = structure(factor(scref$seurat_obj[[]][["annot_id"]]),
+                                                  names = colnames(ref_cts)))
     message("--- RCTD: creating object...")
     RCTD <- create.RCTD(query, reference, max_cores = ncores,
                         gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff,
@@ -84,4 +85,5 @@ rctd_deconvolute <- function(spatial_obj, scref, ncores = 4, gene_cutoff = 0.000
         message("R package spacexr not detected. Installing...")
         install_github("dmcable/spacexr")
     }
+    require(spacexr)
 }

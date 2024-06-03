@@ -13,7 +13,6 @@
 #' See also: https://github.com/cozygene/bisque
 #'
 #' @importFrom Biobase ExpressionSet AnnotatedDataFrame
-#' @importFrom BisqueRNA ReferenceBasedDecomposition
 #' @export
 bisque_deconvolute <- function(bulk_data, scref) {
     .install_bisque()
@@ -43,4 +42,5 @@ bisque_deconvolute <- function(bulk_data, scref) {
         message("R package BisqueRNA not detected. Installing...")
         install.packages("BisqueRNA")
     }
+    require(BisqueRNA)
 }

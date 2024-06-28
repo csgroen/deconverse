@@ -6,6 +6,7 @@
 }
 
 #' @import reticulate
+#' @importFrom stringr str_detect
 .setup_deconv_conda <- function() {
     envs <- conda_list()
     if(!"deconverse" %in% envs$name) {
@@ -19,7 +20,11 @@
     } else {
         message("Using `deconverse` conda environment...")
     }
-    use_miniconda("deconverse", required = TRUE)
+    if(str_detect(conda_binary(), "r-miniconda")) {
+        use_miniconda("deconverse", required = TRUE)
+    } else {
+        use_condaenv("deconverse", required = TRUE)
+    }
 }
 
 #' Read a h5ad file and convert it to a Seurat object

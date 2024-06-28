@@ -4,7 +4,7 @@
 \alias{seurat_to_adata}
 \title{Convert Seurat to a adata}
 \usage{
-seurat_to_adata(seurat_obj, counts_assay = 1)
+seurat_to_adata(seurat_obj, assay = "RNA")
 }
 \arguments{
 \item{seurat_obj}{A `Seurat` object}

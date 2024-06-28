@@ -17,9 +17,9 @@
 bisque_deconvolute <- function(bulk_data, scref) {
     .install_bisque()
     bulk_eset <- ExpressionSet(assayData = bulk_data)
-    cell_annot <- scref$seurat_obj@meta.data
+    cell_annot <- scref$seurat_obj[[]]
     cell_annot[,"cell_id"] <- rownames(cell_annot)
-    sc_eset <- ExpressionSet(as.matrix(scref$seurat_obj@assays$RNA@counts),
+    sc_eset <- ExpressionSet(as.matrix(GetAssayData(scref$seurat_obj, "RNA", "counts")),
                              phenoData = AnnotatedDataFrame(cell_annot))
 
     res <- ReferenceBasedDecomposition(bulk_eset, sc_eset,

@@ -8,7 +8,7 @@ plt_population_mixtures(scbench, nshow = 50, order_by = NULL)
 }
 \arguments{
 \item{scbench}{an `scbench` object that has been evaluated by
-`population_mixtures`}
+`mixtures_population`}
 
 \item{nshow}{an integer, the number of samples to plot}
 

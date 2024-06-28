@@ -208,6 +208,7 @@ mixtures_lod <- function(scbench, max_prop = 0.2, step = 0.01) {
     prop_steps <- seq(0, max_prop, by = step)
     nblanks <- 5
     blank_noise_sd <- 0.01
+
     #-- Get LoD mixtures
     lod_props <- lapply(pop_props, function(l_pop_props) {
         mean_prop <- colMeans(l_pop_props)
@@ -259,6 +260,128 @@ mixtures_lod <- function(scbench, max_prop = 0.2, step = 0.01) {
     scbench$status <- .update_status(scbench$status, "lod")
     return(scbench)
 }
+
+#' Simulate spatially-aware mixtures in an `scbench` object
+#'
+#' @param scbench an `scbench` object
+#' @param n_samples an integer representing the number of samples to simulate
+#' @param n_spots an integer representing the number of spots to simulate within each sample
+#' @param n_zones the number of different zones to generate per slide with different
+#' transcriptomic profiles
+#' @param majority_var variation parameter related to how much the "majority" population
+#' proportion varies within a zone (range: 0 - 0.3)
+#' @param min_majority_prop minimum proportion of the "majority" population in a
+#' zone
+#' @param seed an integer representing a "seed", for reproducibility of mixtures.
+#' @param ... arguments passed to `fields::circulantEmbeddingSetup` related to
+#' the simulation of the Random Gaussian Field
+#'
+#' @import tidyverse testit
+#' @importFrom hitandrun hitandrun
+#'
+#' @return an object of class `scbench`
+#'
+#' @export
+mixtures_spatial <- function(scbench, n_samples = 20, n_spots = 2048, n_zones = 4,
+                             majority_var = 0.15, min_majority_prop = 0.3, seed = 1,
+                             ncores = 8, ...) {
+    message("Simulating population mixtures given bounds...")
+    assert(class(scbench) == "scbench")
+    bounds <- scbench$pop_bounds
+    annot <- scbench$ref_data[[]]
+    nlevs <- scbench$nlevels
+
+    #-- Hit-and-run
+    level <- paste0("l", nlevs)
+    cell_annots <- annot[,level]
+    pops <-  unique(cell_annots)
+    pop_bounds <- tibble(population = pops,
+                         upper = 1,
+                         lower = 0)
+
+    majority_props <- seq(min_majority_prop, 1, by=0.01)
+
+    #-- Get sample (slide) simulations
+    set.seed(seed)
+    all_slide_info <- pbmclapply(1:n_samples, function(slide) {
+        majorities <- rep(NA_character_, n_zones)
+        spatial_grid <- .get_spatial_zones(grid_size = round(sqrt(n_spots)),
+                                           n_zones = n_zones, ...)
+        spatial_grid$zone <- as.character(spatial_grid$zone)
+        spatial_grid2 <- tibble()
+        for(zn in 1:n_zones) {
+            majority_prop <- sample(majority_props,1)
+            majority <- setdiff(sample(cell_annots,30), majorities)[1]
+            majorities[zn] <- majority
+
+            zone_grid <- spatial_grid |> filter(zone == as.character(zn))
+
+            #---- Set zone bounds
+            pop_bounds$lower <- 0
+            pop_bounds$upper <- sample(seq(0,(1-majority_prop), length.out = nrow(pop_bounds)), nrow(pop_bounds),replace=TRUE)
+            pop_bounds[pop_bounds$population == majority,"lower"] <- max(majority_prop-majority_var,0)
+            pop_bounds[pop_bounds$population == majority,"upper"] <- min(majority_prop+majority_var,1)
+            if(sum(pop_bounds$upper) < 1.2) {
+                pop_bounds$upper[pop_bounds$population != majority] <-  sapply(pop_bounds$upper[pop_bounds$population != majority], function(x) { max(x, 0.1) })
+            }
+            #---- Fit hit and run to get proportions
+            zone_mixtures <- .fit_hitandrun(pop_bounds, n.samples = nrow(zone_grid))
+            zone_mixtures[zone_mixtures < 0] <- 0
+            zone_mixtures <- zone_mixtures/rowSums(zone_mixtures)
+
+            #---- Add information to grid
+            zone_grid <- bind_cols(zone_grid, zone_mixtures)
+            spatial_grid2 <- bind_rows(spatial_grid2, zone_grid)
+        }
+        spatial_grid2 <- spatial_grid2 |>
+            mutate(slide = slide) |>
+            relocate(slide, .after = zone)
+        return(spatial_grid2)
+    }, mc.cores = ncores)
+    all_slide_info <- purrr::reduce(all_slide_info, bind_rows) |> arrange(slide,x,y)
+    all_slide_info <- all_slide_info |> mutate(sample = paste0("s", 1:nrow(all_slide_info))) |> relocate(sample)
+
+    # Calculate higher level props
+    spatial_props <- list(all_slide_info)
+    names(spatial_props) <- level
+
+    if(nlevs > 1) {
+        for(i in nlevs:2) {
+            #-- Get information from lower level
+            upper_lev <- paste0("l", i-1)
+            lower_lev <- paste0("l", i)
+
+            groups <- split(scbench$pop_hierarchy |> pull(!!lower_lev),
+                            scbench$pop_hierarchy |> pull(!!upper_lev))
+
+            fine_pops <- unique(unlist(groups))
+
+            props <- spatial_props[[lower_lev]] |>
+                select(all_of(fine_pops))
+
+            coarse_props <- sapply(groups, function(gr) {
+                if(length(gr) > 1) {
+                    rowSums(props[,gr])
+                } else {
+                    unlist(props[,gr])
+                }
+
+            })
+            spatial_props[[upper_lev]] <- spatial_props[[lower_lev]] |>
+                select(-one_of(fine_pops))
+            spatial_props[[upper_lev]] <- bind_cols(spatial_props[[upper_lev]], coarse_props)
+        }
+    }
+
+    spatial_props <- spatial_props[sort(names(spatial_props))]
+
+    scbench[["mixtures"]][["spatial"]] <- spatial_props
+    scbench$status <- .update_status(scbench$status, "mixtures")
+
+    return(scbench)
+}
+
+
 # Pseudobulk ------------------------
 
 #' Generate pseudobulk gene expression from single-cell RNA-seq given
@@ -277,12 +400,14 @@ mixtures_lod <- function(scbench, max_prop = 0.2, step = 0.01) {
 #' @param seed an integer representing a "seed", for reproducibility of mixtures.
 #'
 #' @import tidyverse
+#' @importFrom Seurat CreateSeuratObject
 #'
 #' @return an object of class `scbench`
 #'
 #' @export
 pseudobulks <- function(scbench,
                         ncells = 2000,
+                        spatial_ncells = 30,
                         ncores = 8,
                         shrink_obj = TRUE,
                         by_batch = FALSE,
@@ -292,7 +417,13 @@ pseudobulks <- function(scbench,
     assert(!scbench$shrunk)
 
     #-- Get level (finest grained)
-    levels <- names(scbench[["mixtures"]][["population"]])
+    if("population" %in% names(scbench[["mixtures"]])) {
+        levels <- names(scbench[["mixtures"]][["population"]])
+    } else if("spatial" %in% names(scbench[["mixtures"]])) {
+        levels <- names(scbench[["mixtures"]][["spatial"]])
+    } else {
+        stop("`mixtures_population` or `mixtures_spatial` not run.")
+    }
     level <- levels[length(levels)]
 
     #-- Pseudobulks to generate
@@ -301,6 +432,8 @@ pseudobulks <- function(scbench,
     for (type in types) {
         if(type == "spillover") {
             ncells_run <- min(table(scbench$ref_data@meta.data[,level]))
+        } else if (type == "spatial") {
+            ncells_run = spatial_ncells
         } else {
             ncells_run <- ncells
         }
@@ -310,7 +443,7 @@ pseudobulks <- function(scbench,
                                       ncores = ncores, ncells = ncells_run,
                                       by_batch = by_batch)
             scbench[["mixtures"]][[type]][[level]] <- pb_res$props
-            scbench[["pseudobulk_counts"]][["population"]] <- pb_res$pseudobulk
+            scbench[["pseudobulk_counts"]][[type]] <- pb_res$pseudobulk
             if(level != "l1") {
                 scbench$pop_hierarchy
                 finer_lvl <- str_remove(level, "l") %>% as.numeric()
@@ -326,7 +459,7 @@ pseudobulks <- function(scbench,
                 }
             }
             rm(pb_res)
-        } else {
+        } else if(type %in% c("lod", "spillover", "spatial")) {
             multi_pb_res <- lapply(levels, function(level) {
                 .get_pseudobulk(scbench, type,
                                 level = level, seed = seed,
@@ -338,6 +471,25 @@ pseudobulks <- function(scbench,
             scbench[["pseudobulk_counts"]][[type]] <- pbs
             rm(multi_pb_res)
 
+        } else if (type == "spatial") {
+            pb_res <- .get_pseudobulk(scbench, type,
+                                      level = level, seed = seed,
+                                      ncores = ncores, ncells = ncells_run,
+                                      by_batch = by_batch)
+            pb_mat <- pb_res$pseudobulk
+            mixtures <- scbench$mixtures$spatial[[lv]]
+
+            slide_n <- unique(mixtures$slide)
+            pb_slides <- lapply(slide_n, function(s) {
+                slide_df <- mixtures |> filter(slide == s)
+                so <- CreateSeuratObject(counts = pb_mat[,slide_df$sample], assay = "Spatial")
+                coords <- as.data.frame(slide_df[,c("x", "y")])
+                rownames(coords) <- slide_df$sample
+                image <- new(Class = "SlideSeq", assay = "Spatial", coordinates = coords)
+                so[["Slice"]] <- image
+                return(so)
+            })
+            scbench[["pseudobulk_counts"]][[type]] <- pb_slides
         }
     gc()
     }
@@ -514,7 +666,7 @@ deconverse_results.scbench <- function(scbench, tidy = FALSE, ...) {
 
 #' Plot sample population mixtures from an `scbench` object
 #' @param scbench an `scbench` object that has been evaluated by
-#' `population_mixtures`
+#' `mixtures_population`
 #' @param nshow an integer, the number of samples to plot
 #' @param order_by a string of a name of a population to order the samples with
 #' increasing mixtures of `order_by`
@@ -527,7 +679,7 @@ deconverse_results.scbench <- function(scbench, tidy = FALSE, ...) {
 plt_population_mixtures <- function(scbench, nshow = 50, order_by = NULL) {
     #-- Get data
     assert(class(scbench) == "scbench")
-    assert("pop_props" %in% names(scbench))
+    assert("population" %in% names(scbench[["mixtures"]]))
     pop_props <- scbench[["mixtures"]][["population"]]
 
     pop_props <- lapply(pop_props, as_tibble)
@@ -554,6 +706,42 @@ plt_population_mixtures <- function(scbench, nshow = 50, order_by = NULL) {
             theme_sparse()
     })
     return(level_plots)
+}
+
+#' Plot sample spatial mixture from an `scbench` object
+#' @param scbench an `scbench` object that has been evaluated by
+#' `mixtures_spatial`
+#' @param nslide an integer, the number of the slide to plot
+#' @param level what level of annotation to plot. If not specified,
+#' finest will be shown.
+#'
+#' @import tidyverse
+#'
+#' @return a ggplot object
+#'
+#' @export
+plt_spatial_mixture <- function(scbench, nslide = 1, level = NULL) {
+    assert(class(scbench) == "scbench")
+    assert("spatial" %in% names(scbench[["mixtures"]]))
+    spatial_props <- scbench[["mixtures"]][["spatial"]]
+    if(is.null(level)) {
+        level <- paste0("l", length(spatial_props))
+    }
+    message("Plotting mixtures for `slide ", nslide, "` using annotation level `", level, "`")
+    slide_props <- spatial_props[[level]] |> filter(slide == nslide)
+    pops <- colnames(slide_props)[7:ncol(slide_props)]
+
+
+    plt <- slide_props |>
+        pivot_longer(cols = any_of(pops), names_to = "population", values_to = "proportion") |>
+        ggplot(aes(x,y,fill = proportion)) +
+        facet_wrap(~ population) +
+        geom_tile() +
+        scale_fill_distiller(limits = c(0,1), direction=1) +
+        theme_void()
+
+    return(plt)
+
 }
 
 #' Plot correlations by population between deconvolution results
@@ -915,6 +1103,8 @@ plt_lod_heatmap <- function(scbench, level = NULL) {
         pivot_wider(names_from = method, values_from = lod) %>%
         ungroup()
 
+    lods[is.na(lods)] <- max(bench_tb$truth)
+
     method_order <- lod_tb %>%
         group_by(method) %>%
         summarize(mean_lod = mean(lod)) %>%
@@ -927,6 +1117,7 @@ plt_lod_heatmap <- function(scbench, level = NULL) {
                         rowv = method_order,
                         cluster_rows = FALSE,
                         cluster_cols = TRUE,
+                        dist_method = "euclidean",
                         hm_colors = viridis::viridis(100),
                         hm_color_limits = c(0, max(bench_tb$truth)),
                         colors_title = "Limit of detection (fraction)",
@@ -1054,7 +1245,7 @@ librarySizeNormalization <- function(data, factor = 10^6) {
     data/(colSums(data)/factor)
 }
 
-#' @rdname print
+#' @method print scbench
 #' @export
 print.scbench <- function(x, ...) {
     cat(str_glue("scbench object named {x$project_name} with {length(unique(unlist(x$pop_hierarchy)))} reference populations and {x$nlevels} levels of annotation"))
@@ -1255,8 +1446,10 @@ theme_sparse3 <- function (...) {
         pb_props <- pop_props[[level]]
     } else if (type == "lod") {
         pb_props <- pop_props[[level]][,-c(1,2)]
-    } else {
+    } else if (type == "spillover") {
         pb_props <- pop_props[[level]][,-1]
+    } else if (type == "spatial") {
+        pb_props <- pop_props[[level]][,-c(1:6)]
     }
     pops <- colnames(pb_props)
     meta <- scbench$ref_data@meta.data
@@ -1330,12 +1523,13 @@ theme_sparse3 <- function (...) {
 
                 }
             }) %>% reduce(c)
-            rowSums(scbench$ref_data@assays$RNA@counts[, sample_cells])
-        }, mc.cores = ncores)
+            Matrix::rowSums(GetAssayData(scbench$ref_data, "RNA", "counts")[, sample_cells])
+        }, mc.cores=ncores)
         message("-- Joining matrix...")
     }
-    pb_mat <- reduce(pseudobulks, cbind)
+    pb_mat <- matrix(unlist(pseudobulks), nrow = length(pseudobulks[[1]]), ncol = nsamps)
     colnames(pb_mat) <- paste0("s", 1:ncol(pb_mat))
+    rownames(pb_mat) <- names(pseudobulks[[1]])
     pb_res <- list(pseudobulk = pb_mat, props = pb_props)
     gc()
 
@@ -1510,3 +1704,33 @@ theme_sparse3 <- function (...) {
 
     plt1 / plt2
 }
+
+#' @importFrom fields circulantEmbeddingSetup circulantEmbedding
+#' @importFrom stats kmeans
+.get_spatial_zones <- function(grid_size = 32, n_zones = 4, seed = NULL, ...) {
+    if(!is.null(seed)) {
+        set.seed(seed)
+    }
+
+    # Generate random Gaussian field (2D)
+    ref_grid<- list(x= seq(0,5,,grid_size), y= seq(0,5,,grid_size))
+    obj<- circulantEmbeddingSetup(ref_grid, ...)
+    look <- circulantEmbedding(obj)
+
+    # Melt it
+    spatial_grid <- look |>
+        as.data.frame() |>
+        rownames_to_column("x") |>
+        pivot_longer(starts_with("V"), names_to = 'y', values_to = "z") |>
+        mutate(y = as.integer(str_remove(y, "V")),
+               x = as.integer(x))
+
+    # Divide into "k" zones
+    kmeans_result <- kmeans(spatial_grid$z, centers = n_zones)
+    spatial_grid$zone <- as.factor(kmeans_result$cluster)
+
+
+    return(spatial_grid)
+}
+
+

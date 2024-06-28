@@ -4,7 +4,7 @@
 \alias{adata_to_seurat}
 \title{Convert adata to a Seurat object}
 \usage{
-adata_to_seurat(adata, counts_layer)
+adata_to_seurat(adata, counts_layer, ...)
 }
 \arguments{
 \item{adata}{An `anndata` python object}

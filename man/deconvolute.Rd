@@ -12,7 +12,7 @@
   method = deconvolution_methods()[1],
   type = c("population", "spillover", "lod")[1],
   pseudobulk_norm = c("rpm", "none", "proportional_fitting")[3],
-  correct_finer = TRUE,
+  correct_finer = FALSE,
   ...
 )
 
@@ -21,7 +21,7 @@
   scref,
   method = deconvolution_methods()[1],
   bulk_norm = c("none", "rpm", "proportional_fitting")[1],
-  correct_finer = TRUE,
+  correct_finer = FALSE,
   cache_path = ".",
   ...
 )
@@ -31,7 +31,7 @@
   scref,
   method = deconvolution_methods()[1],
   normalization_method = c("none", "rp10k", "proportional_fitting")[1],
-  correct_finer = TRUE,
+  correct_finer = FALSE,
   cache_path = "deconverse_cache",
   ...
 )

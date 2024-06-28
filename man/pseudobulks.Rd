@@ -8,6 +8,7 @@ population mixtures in an `scbench` object}
 pseudobulks(
   scbench,
   ncells = 2000,
+  spatial_ncells = 30,
   ncores = 8,
   shrink_obj = TRUE,
   by_batch = FALSE,

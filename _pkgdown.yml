@@ -33,13 +33,9 @@ reference:
 - title: Extras
   desc: Other package functions
 - contents:
+    - pp_PBMCs
     - read_h5ad
     - test_markers
     - install_cibersortx
     - adata_to_seurat
     - seurat_to_adata
-    - .pp_PBMCs
-- title: Data
-  desc: Included data
-- contents:
-    - pbmc

@@ -74,9 +74,9 @@ card_scref <- function(scref) {
 #' @importFrom stringr str_subset
 #' @importFrom rdist rdist
 #' @importFrom gtools rdirichlet
-#' @importFrom CARD CARDref
 #' @export
 card_deconvolute <- function(spatial_obj, scref) {
+    .install_card()
     .install_card()
     # Adapting to spatial_obj and scref input
     assert(class(scref) == "screference")

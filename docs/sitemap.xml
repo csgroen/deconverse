@@ -49,6 +49,12 @@
     <loc>https://csgroen.github.io/deconverse/reference/card_scref.html</loc>
   </url>
   <url>
+    <loc>https://csgroen.github.io/deconverse/reference/cell2location_deconvolute.html</loc>
+  </url>
+  <url>
+    <loc>https://csgroen.github.io/deconverse/reference/cell2location_scref.html</loc>
+  </url>
+  <url>
     <loc>https://csgroen.github.io/deconverse/reference/cibersortx_deconvolute.html</loc>
   </url>
   <url>
@@ -95,6 +101,9 @@
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/mixtures_population.html</loc>
+  </url>
+  <url>
+    <loc>https://csgroen.github.io/deconverse/reference/mixtures_spatial.html</loc>
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/mixtures_spillover.html</loc>
@@ -154,10 +163,16 @@
     <loc>https://csgroen.github.io/deconverse/reference/plt_spatial_correlation.html</loc>
   </url>
   <url>
+    <loc>https://csgroen.github.io/deconverse/reference/plt_spatial_mixture.html</loc>
+  </url>
+  <url>
     <loc>https://csgroen.github.io/deconverse/reference/plt_spillover_heatmap.html</loc>
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/plt_spillover_scatter.html</loc>
+  </url>
+  <url>
+    <loc>https://csgroen.github.io/deconverse/reference/pp_PBMCs.html</loc>
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/pseudobulks.html</loc>
@@ -182,6 +197,9 @@
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/seurat_to_adata.html</loc>
+  </url>
+  <url>
+    <loc>https://csgroen.github.io/deconverse/reference/spacet_deconvolute.html</loc>
   </url>
   <url>
     <loc>https://csgroen.github.io/deconverse/reference/spotlight_deconvolute.html</loc>

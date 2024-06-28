@@ -28,7 +28,7 @@ of batch are patient ID, study ID, etc.}
 
 \item{cache_path}{path to the directory where results will be cached.}
 
-\item{sample_cells}{NULL or a list with how many cells to randomly sub-sample of each
+\item{sample_cells}{NULL or a named vector with how many cells to randomly sub-sample of each
 population. Sub-sampling can make the object significantly smaller and accelerate
 downstream computation, but make the results less accurate.}
 

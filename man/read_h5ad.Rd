@@ -4,7 +4,7 @@
 \alias{read_h5ad}
 \title{Read a h5ad file and convert it to a Seurat object}
 \usage{
-read_h5ad(file, counts_layer = "counts")
+read_h5ad(file, counts_layer = "counts", ...)
 }
 \arguments{
 \item{file}{A character string representing the path to the h5ad file.}

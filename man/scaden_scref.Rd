@@ -15,7 +15,7 @@ scaden_scref(
   learning_rate = 1e-04,
   steps = 1000,
   seed = 0,
-  gpu = FALSE
+  gpu = TRUE
 )
 }
 \arguments{

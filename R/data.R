@@ -1,8 +1,17 @@
-#' Get Seurat PBMCs pre-processed example
-.pp_PBMCs <- function() {
+#' Get Seurat PBMCs example and pre-process
+#'
+#' Downloads 10X genomics PBMC 3k dataset and runs standard pre-processing
+#' with Seurat
+#'
+#' @import Seurat
+#'
+#' @export
+pp_PBMCs <- function() {
     #-- Get data
-    download.file("https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz",
-                  "./pbmc3k_filtered_gene_bc_matrices.tar.gz")
+    if(!file.exists( "./pbmc3k_filtered_gene_bc_matrices.tar.gz")) {
+        download.file("https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz",
+                      "./pbmc3k_filtered_gene_bc_matrices.tar.gz")
+    }
     untar("pbmc3k_filtered_gene_bc_matrices.tar.gz")
     pbmc.data <- Read10X(data.dir = "filtered_gene_bc_matrices/hg19/")
     #-- Run Seurat pp
@@ -41,19 +50,20 @@
     pbmc <- pbmc[,!pbmc$Cell_major_identities == "Platelet"]
     pbmc$Cell_major_identities <- as.character(pbmc$Cell_major_identities)
     pbmc$Cell_minor_identities <- as.character(pbmc$Cell_minor_identities)
-    dir.create("data", showWarnings = FALSE)
-    usethis::use_data(pbmc, overwrite = TRUE)
-    return(TRUE)
+    # dir.create("data", showWarnings = FALSE)
+    # usethis::use_data(pbmc, overwrite = TRUE)
+    # return(TRUE)
+    return(pbmc)
 }
 
-#' Seurat example PBCM dataset
-#'
-#' Cells annotated with the example pipeline from the Seurat package vignette,
-#' already preprocessed, and with Platelet cluster removed (too few cells)
-#'
-#' @format `pbmc`
-#' A Seurat Object.
-#'
-#' @source <https://satijalab.org/seurat/articles/pbmc3k_tutorial.html>
-"pbmc"
+#' #' Seurat example PBCM dataset
+#' #'
+#' #' Cells annotated with the example pipeline from the Seurat package vignette,
+#' #' already preprocessed, and with Platelet cluster removed (too few cells)
+#' #'
+#' #' @format `pbmc`
+#' #' A Seurat Object.
+#' #'
+#' #' @source <https://satijalab.org/seurat/articles/pbmc3k_tutorial.html>
+#' "pbmc"
 

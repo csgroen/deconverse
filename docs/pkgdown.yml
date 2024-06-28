@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   intro_pbmc: intro_pbmc.html
   pdac_tutorial: pdac_tutorial.html
-last_built: 2024-05-16T16:12Z
+last_built: 2024-06-28T14:13Z
 urls:
   reference: https://csgroen.github.io/deconverse/reference
   article: https://csgroen.github.io/deconverse/articles

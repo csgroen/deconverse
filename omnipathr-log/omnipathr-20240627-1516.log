@@ -1,0 +1,99 @@
+[2024-06-27 15:16:15] [INFO]    [OmnipathR] Welcome to OmnipathR!
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:16:15] [INFO]    [OmnipathR] Initialized cache: `/home/clarice/.cache/OmnipathR`.
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/R/x86_64-pc-linux-gnu-library/4.4/OmnipathR/db/db_def.json` (encoding: UTF-8).
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/R/x86_64-pc-linux-gnu-library/4.4/OmnipathR/internal/magic_bytes.json` (encoding: UTF-8).
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/R/x86_64-pc-linux-gnu-library/4.4/OmnipathR/internal/urls.json` (encoding: UTF-8).
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/R/x86_64-pc-linux-gnu-library/4.4/OmnipathR/internal/id_types.json` (encoding: UTF-8).
+[2024-06-27 15:16:15] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [WARN]    [OmnipathR] [decoupleR] Failed to check the list of available resources in OmniPath. Proceeding anyways.
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Loading database `Ensembl and OMA organism names`.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Looking up in cache `https://www.ensembl.org/info/about/species.html`: key=7332486db7400730697234bad76ca0c8e4d00799, no version available.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Created new version for cache record 7332486db7400730697234bad76ca0c8e4d00799: version 1.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Cache file path: /home/clarice/.cache/OmnipathR/7332486db7400730697234bad76ca0c8e4d00799-1.html
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Retrieving URL: `https://www.ensembl.org/info/about/species.html`
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Attempt 1/3: `https://www.ensembl.org/info/about/species.html`
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] HTTP 200
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Download ready [key=7332486db7400730697234bad76ca0c8e4d00799, version=1]
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Cache item `7332486db7400730697234bad76ca0c8e4d00799` version 1: status changed from `unknown` to `ready`.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Looking up in cache: `https://omabrowser.org/All/oma-species.txt`.
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Cache record does not exist: `https://omabrowser.org/All/oma-species.txt`
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Could not find in cache, initiating download: `https://omabrowser.org/All/oma-species.txt`.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Cache item `30e690cbb55dfc63b5903ab337f34ffc2f4be397` version 1: status changed from `unknown` to `started`.
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Exporting object to RDS: `/home/clarice/.cache/OmnipathR/30e690cbb55dfc63b5903ab337f34ffc2f4be397-1.rds`.
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Retrieving URL: `https://omabrowser.org/All/oma-species.txt`
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Attempt 1/3: `https://omabrowser.org/All/oma-species.txt`
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Exported RDS to `/home/clarice/.cache/OmnipathR/30e690cbb55dfc63b5903ab337f34ffc2f4be397-1.rds`.
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Download ready [key=30e690cbb55dfc63b5903ab337f34ffc2f4be397, version=1]
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:10] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:10] [INFO]    [OmnipathR] Cache item `30e690cbb55dfc63b5903ab337f34ffc2f4be397` version 1: status changed from `started` to `ready`.
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Loaded database `Ensembl and OMA organism names`.
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Looking up in cache: `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Cache record does not exist: `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Looking up in cache: `http://no-tls.omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Cache record does not exist: `http://no-tls.omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Attempting `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Retrieving URL: `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Attempt 1/3: `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Successfully retrieved: `https://omnipathdb.org/annotations?resources=HALLMARK&license=academic`
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Cache item `24b7e0f57ffb929e6e2f3112a95a96ca77b05ced` version 1: status changed from `unknown` to `started`.
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Exporting object to RDS: `/home/clarice/.cache/OmnipathR/24b7e0f57ffb929e6e2f3112a95a96ca77b05ced-1.rds`.
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Exported RDS to `/home/clarice/.cache/OmnipathR/24b7e0f57ffb929e6e2f3112a95a96ca77b05ced-1.rds`.
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Download ready [key=24b7e0f57ffb929e6e2f3112a95a96ca77b05ced, version=1]
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:17:11] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:17:11] [INFO]    [OmnipathR] Cache item `24b7e0f57ffb929e6e2f3112a95a96ca77b05ced` version 1: status changed from `started` to `ready`.
+[2024-06-27 15:17:11] [SUCCESS] [OmnipathR] Downloaded 0 annotation records.
+[2024-06-27 15:17:48] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:17:48] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:18:14] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:18:14] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Looking up in cache: `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [INFO]    [OmnipathR] Cache record does not exist: `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Looking up in cache: `http://no-tls.omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [INFO]    [OmnipathR] Cache record does not exist: `http://no-tls.omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Attempting `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [INFO]    [OmnipathR] Retrieving URL: `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:18:35] [TRACE]   [OmnipathR] Attempt 1/3: `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:20:28] [INFO]    [OmnipathR] Successfully retrieved: `https://omnipathdb.org/annotations?resources=MSigDB&license=academic`
+[2024-06-27 15:20:28] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:20:28] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:20:28] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:20:28] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:20:28] [INFO]    [OmnipathR] Cache item `5cbd6eef07085d333f425bc50fb18bf52c2a140d` version 1: status changed from `unknown` to `started`.
+[2024-06-27 15:20:28] [TRACE]   [OmnipathR] Exporting object to RDS: `/home/clarice/.cache/OmnipathR/5cbd6eef07085d333f425bc50fb18bf52c2a140d-1.rds`.
+[2024-06-27 15:20:47] [TRACE]   [OmnipathR] Exported RDS to `/home/clarice/.cache/OmnipathR/5cbd6eef07085d333f425bc50fb18bf52c2a140d-1.rds`.
+[2024-06-27 15:20:47] [INFO]    [OmnipathR] Download ready [key=5cbd6eef07085d333f425bc50fb18bf52c2a140d, version=1]
+[2024-06-27 15:20:47] [TRACE]   [OmnipathR] Reading JSON from `/home/clarice/.cache/OmnipathR/cache.json` (encoding: UTF-8).
+[2024-06-27 15:20:47] [TRACE]   [OmnipathR] JSON validation successful: TRUE
+[2024-06-27 15:20:47] [INFO]    [OmnipathR] Cache item `5cbd6eef07085d333f425bc50fb18bf52c2a140d` version 1: status changed from `started` to `ready`.
+[2024-06-27 15:20:47] [SUCCESS] [OmnipathR] Downloaded 11044532 annotation records.
+[2024-06-27 15:37:27] [TRACE]   [OmnipathR] Reading JSON from `https://omnipathdb.org/resources` (encoding: UTF-8).
+[2024-06-27 15:37:27] [TRACE]   [OmnipathR] JSON validation successful: TRUE

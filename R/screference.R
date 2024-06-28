@@ -205,11 +205,18 @@ new_hscreference <- function(
 
     #-- Subsample cells
     if(!is.null(sample_cells)) {
+        assert(is.numeric(sample_cells))
         meta <- seurat_obj@meta.data
-        coarse_annot <- annot_ids[1]
-        colnames(meta)[colnames(meta) == coarse_annot] <- "annot_id"
+        match_lvl <- sapply(annot_ids, function(id) {
+            all(unique(meta[,id]) %in% names(sample_cells))
+        })
+        if(!any(match_lvl)) {
+            stop("`sample_cells` doesn't match any level in `annot_ids`")
+        }
+        annot_lvl <- annot_ids[match_lvl]
+        colnames(meta)[colnames(meta) == annot_lvl] <- "annot_id"
         pops <- unique(meta[,"annot_id"])
-        if(any(str_detect(pops, c("\\/|\\-"), negate = TRUE))) {
+        if(any(str_detect(pops, c("\\/|\\-")))) {
             stop("Population names should not contain `/` or `-`")
         }
 
@@ -363,7 +370,7 @@ plt_comp_performance <- function(x, ...) {
     return(list(hpop_tree = hpop_tree, hpop_table = hpop_table))
 }
 
-#' @rdname print
+#' @method print screference
 #' @export
 print.screference <- function(scref, ...) {
     cat(str_glue("screference object named `{scref$project_name}` with {ncol(scref$seurat_obj)} cells and {length(scref$populations)} populations"))
@@ -374,7 +381,7 @@ print.screference <- function(scref, ...) {
     cat(paste0(names(scref$cached_results), collapse = ", "))
 }
 
-#' @rdname print
+#' @method print hscreference
 #' @export
 print.hscreference <- function(hscref, ...) {
     cat(str_glue("h-screference object named `{hscref$project_name}` with {hscref$nlevels} levels of annotation from {ncol(hscref$screfs[[1]]$seurat_obj)} cells"))

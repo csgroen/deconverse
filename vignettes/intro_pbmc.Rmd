@@ -40,7 +40,7 @@ library(patchwork)
 ```
 
 ```{r}
-pbmc
+pbmc <- pp_PBMCs()
 ```
 
 ```{r fig.width=6.5, fig.height=3}
@@ -87,14 +87,19 @@ pbmc_ref
 
 Once the object is created, it can be used to compute a reference for different methods. We'll compute references for DWLS (which is also used for OLS and SVR), svr and AutoGeneS. For all available deconvolution methods, use `deconvolution_methods()`.
 
+### Cache
+
+To run this example much faster, download the cached results as shown:
+
 ```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
-# To run this example much faster, download the cached results here:
-# download.file("http://xfer.curie.fr/get/nil/yhew87z53NM/scref_cache.zip", "scref_cache.zip")
-# unzip("scref_cache.zip")
-# file.remove("scref_cache.zip")
+download.file("https://github.com/csgroen/deconverse_data/raw/main/deconverse_vignette_cache.zip", "cache.zip")
+unzip("cache.zip")
+file.remove("cache.zip")
 ```
 
-And then compute the references (they will be grabbed from the cache):
+### Compute references
+
+And then compute the references (they will be grabbed from the cache if present):
 
 ```{r results='hide'}
 # Optional: parallelize with Seurat
@@ -373,16 +378,9 @@ pbmc_bench <- pbmc_bench |>
 
 Then, we can generate pseudobulks for these mixtures by mixing 100 random cells that correspond to the proportions given by the mixtures. Finally, we can call the different methods to deconvolute.
 
-As for the screference, the next steps will go a lot faster by using cached results:
+As for the screference, the next steps will go a lot faster by using cached results.
 
-```{r results='hide', echo=FALSE, eval=FALSE, include=FALSE}
-# To run this example much faster, download the cached results here:
-# download.file("http://xfer.curie.fr/get/nil/3gPPjfkeAS8/scbench_cache.zip", "scbench_cache.zip")
-# unzip("scbench_cache.zip")
-# file.remove("scbench_cache.zip")
-```
-
-Here, we're demonstrating with 6 methods currently implemented. For a full list, see `deconvolution_methods()`.
+Here, we're demonstrating with 5 methods currently implemented. For a full list, see `deconvolution_methods()`.
 
 ```{r}
 pbmc_bench <- pseudobulks(pbmc_bench, ncells = 1000)

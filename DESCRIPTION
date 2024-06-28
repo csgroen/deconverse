@@ -41,6 +41,7 @@ Imports:
     broom,
     peakRAM,
     fields,
+    corrr, 
     sf
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -50,7 +51,7 @@ Suggests:
     knitr,
     rmarkdown,
     reticulate,
-    corrr, 
+    ggcorrplot,
     ggnetwork, 
     network,
     BayesPrism,

@@ -42,7 +42,8 @@ Imports:
     peakRAM,
     fields,
     corrr, 
-    sf
+    sf,
+    ggnetwork
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -52,7 +53,6 @@ Suggests:
     rmarkdown,
     reticulate,
     ggcorrplot,
-    ggnetwork, 
     network,
     BayesPrism,
     BisqueRNA,
